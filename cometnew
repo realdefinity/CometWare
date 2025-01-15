@@ -641,7 +641,7 @@ UITab:CreateButton({
     end
 })
 
--- START OF AUTO BOSS -- 
+-- START OF AUTO BOSS ---------------------------------------------------------------------------------------------------------------------------------
 
 local autoBossActive = false
 local pathfindingService = game:GetService("PathfindingService")
@@ -814,7 +814,7 @@ FarmingTab:CreateToggle({
 })
 
 
--- END OF AUTO BOSS -- 
+-- END OF AUTO BOSS ---------------------------------------------------------------------------------------------------------------------------------
 
 -- Function to queue on teleport and hop to a new server
 local function serverHop()
@@ -850,37 +850,259 @@ MiscTab:CreateButton({
     end
 })
 
-local cooldownBypassActive = false
-local VirtualInputManager = game:GetService("VirtualInputManager")
+-- UI STATS ---------------------------------------------------------------------------------------------------------------------------------
 
--- Keys for abilities
-local abilityKeys = { "Z", "X", "C", "V" }
+-- Add a Stats Panel to the Rayfield UI
+local statsSection = FarmingTab:CreateSection("Stats") -- Create a new section for stats
+local currentBossLabel = statsSection:CreateLabel("Current Boss: None") -- Label for the current boss
+local bossesKilledLabel = statsSection:CreateLabel("Bosses Killed: 0") -- Label for total bosses killed
+local dropsCollectedLabel = statsSection:CreateLabel("Drops Collected: 0") -- Label for total drops collected
 
--- Function to spam abilities and bypass cooldowns
-local function bypassCooldowns()
-    while cooldownBypassActive do
-        for _, key in ipairs(abilityKeys) do
-            -- Simulate pressing the ability key
-            VirtualInputManager:SendKeyEvent(true, key, false, game)
-            task.wait(0.05) -- Small delay to simulate keypress
-            VirtualInputManager:SendKeyEvent(false, key, false, game)
+-- Variables to Track Stats
+local currentBossName = "None"
+local bossesKilled = 0
+local dropsCollected = 0
+
+-- Update Stats Function
+local function updateStats()
+    currentBossLabel:Set("Current Boss: " .. currentBossName)
+    bossesKilledLabel:Set("Bosses Killed: " .. tostring(bossesKilled))
+    dropsCollectedLabel:Set("Drops Collected: " .. tostring(dropsCollected))
+end
+
+-- Functions to Modify Stats
+local function setCurrentBoss(name)
+    currentBossName = name
+    updateStats()
+end
+
+local function incrementBossesKilled()
+    bossesKilled = bossesKilled + 1
+    updateStats()
+end
+
+local function incrementDropsCollected()
+    dropsCollected = dropsCollected + 1
+    updateStats()
+end
+
+-- Example Usage (Integrate These into Your Script Logic)
+-- Call `setCurrentBoss("Boss Name")` when targeting a boss
+-- Call `incrementBossesKilled()` when a boss is defeated
+-- Call `incrementDropsCollected()` when loot is collected
+
+-- END OF UI STATS ---------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-- BOSS RESPAWN TIMER ---------------------------------------------------------------------------------------------------------------------------------
+
+-- Boss Respawn Timer Variables
+local bossRespawnTimes = {
+    ["The Saw"] = 900, -- 15 minutes
+    ["Mob Leader"] = 1200, -- 20 minutes
+    ["Saber Expert"] = 1800, -- 30 minutes
+    ["Warden"] = 600, -- 10 minutes
+    ["Chief Warden"] = 600,
+    ["Swan"] = 1200,
+    ["Ice Admiral"] = 900,
+    ["Don Swan"] = 3600 -- 1 hour
+}
+local respawnTimers = {} -- Tracks respawn end times for each boss
+
+-- Add Respawn Timers to Rayfield UI
+local respawnSection = FarmingTab:CreateSection("Respawn Timers")
+local respawnLabels = {}
+
+for bossName, _ in pairs(bossRespawnTimes) do
+    respawnLabels[bossName] = respawnSection:CreateLabel(bossName .. ": Ready")
+end
+
+-- Update Respawn Timers Function
+local function updateRespawnTimers()
+    for bossName, endTime in pairs(respawnTimers) do
+        local remainingTime = math.max(0, endTime - os.time())
+        if remainingTime > 0 then
+            local minutes = math.floor(remainingTime / 60)
+            local seconds = remainingTime % 60
+            respawnLabels[bossName]:Set(bossName .. ": " .. string.format("%02d:%02d", minutes, seconds))
+        else
+            respawnLabels[bossName]:Set(bossName .. ": Ready")
         end
-        task.wait(0.1) -- Adjust delay to control spam rate
     end
 end
 
--- Add Toggle to Misc Tab
-MiscTab:CreateToggle({
-    Name = "Bypass Ability Cooldowns",
-    CurrentValue = false,
-    Flag = "ToggleCooldownBypass",
-    Callback = function(Value)
-        cooldownBypassActive = Value
-        if cooldownBypassActive then
-            print("[Cooldown Bypass] Enabled.")
-            task.spawn(bypassCooldowns)
-        else
-            print("[Cooldown Bypass] Disabled.")
+-- Set Respawn Timer for a Boss
+local function setRespawnTimer(bossName)
+    if bossRespawnTimes[bossName] then
+        respawnTimers[bossName] = os.time() + bossRespawnTimes[bossName]
+        Rayfield:Notify({
+            Title = "Boss Defeated",
+            Content = bossName .. " will respawn in " .. bossRespawnTimes[bossName] / 60 .. " minutes.",
+            Duration = 5,
+        })
+    end
+end
+
+-- Timer Update Loop
+task.spawn(function()
+    while true do
+        updateRespawnTimers()
+        task.wait(1) -- Update every second
+    end
+end)
+
+-- END OF BOSS RESPAWN TIMER ---------------------------------------------------------------------------------------------------------------------------------
+
+
+-- AUTO COLLECT DROPS ---------------------------------------------------------------------------------------------------------------------------------
+
+-- Auto Collect Drops Variables
+local autoCollectDropsActive = false
+local collectionRange = 50 -- Max distance to collect drops
+local dropsFolderName = "Drops" -- Replace with the actual folder name for drops if known
+
+-- Function to Collect Drops
+local function collectDrops()
+    local dropsFolder = workspace:FindFirstChild(dropsFolderName)
+    if not dropsFolder then
+        warn("[Auto Collect Drops] Drops folder not found.")
+        return
+    end
+
+    local player = game.Players.LocalPlayer
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        for _, drop in pairs(dropsFolder:GetChildren()) do
+            if drop:IsA("BasePart") and (drop.Position - humanoidRootPart.Position).Magnitude <= collectionRange then
+                -- Move to the drop and collect it
+                humanoidRootPart.CFrame = CFrame.new(drop.Position)
+                task.wait(0.2) -- Small delay to mimic interaction
+
+                -- Notify and update stats
+                incrementDropsCollected()
+                Rayfield:Notify({
+                    Title = "Drop Collected",
+                    Content = "Collected: " .. (drop.Name or "Unknown Drop"),
+                    Duration = 3,
+                })
+
+                -- Destroy the drop (optional, depends on game mechanics)
+                drop:Destroy()
+            end
         end
     end
+end
+
+-- Auto Collect Drops Toggle
+FarmingTab:CreateToggle({
+    Name = "Auto Collect Drops",
+    CurrentValue = false,
+    Flag = "Toggle_AutoCollectDrops",
+    Callback = function(Value)
+        autoCollectDropsActive = Value
+        if autoCollectDropsActive then
+            Rayfield:Notify({
+                Title = "Auto Collect Drops",
+                Content = "Enabled auto collection of drops.",
+                Duration = 3,
+            })
+            -- Start the drop collection loop
+            task.spawn(function()
+                while autoCollectDropsActive do
+                    collectDrops()
+                    task.wait(1) -- Check for drops every second
+                end
+            end)
+        else
+            Rayfield:Notify({
+                Title = "Auto Collect Drops",
+                Content = "Disabled auto collection of drops.",
+                Duration = 3,
+            })
+        end
+    end,
 })
+
+-- END OF AUTO COLLECT DROPS ---------------------------------------------------------------------------------------------------------------------------------
+
+
+-- DETECTION COLLECTION ---------------------------------------------------------------------------------------------------------------------------------
+
+-- Fruit Detection & Collection Variables
+local detectionCollectionActive = false
+local fruitFolderName = "Fruits" -- Replace with the actual folder name for fruits if known
+local scanInterval = 5 -- Time in seconds between scans
+
+-- Function to Find and Collect Fruits
+local function detectAndCollectFruits()
+    local fruitsFolder = workspace:FindFirstChild(fruitFolderName)
+    if not fruitsFolder then
+        warn("[Fruit Detection] Fruits folder not found.")
+        return
+    end
+
+    local player = game.Players.LocalPlayer
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        for _, fruit in pairs(fruitsFolder:GetChildren()) do
+            if fruit:IsA("BasePart") then
+                -- Notify user about the fruit detection
+                Rayfield:Notify({
+                    Title = "Fruit Detected",
+                    Content = "Found: " .. (fruit.Name or "Unknown Fruit"),
+                    Duration = 5,
+                })
+
+                -- Teleport to the fruit
+                humanoidRootPart.CFrame = CFrame.new(fruit.Position)
+                task.wait(0.5) -- Wait to ensure collection
+
+                -- Notify user about the collection
+                Rayfield:Notify({
+                    Title = "Fruit Collected",
+                    Content = "Collected: " .. (fruit.Name or "Unknown Fruit"),
+                    Duration = 5,
+                })
+
+                -- Destroy the fruit (optional, depends on game mechanics)
+                fruit:Destroy()
+            end
+        end
+    end
+end
+
+-- Fruit Detection Toggle
+FarmingTab:CreateToggle({
+    Name = "Detection Collection",
+    CurrentValue = false,
+    Flag = "Toggle_FruitDetection",
+    Callback = function(Value)
+        detectionCollectionActive = Value
+        if detectionCollectionActive then
+            Rayfield:Notify({
+                Title = "Detection Collection",
+                Content = "Enabled fruit detection and collection.",
+                Duration = 3,
+            })
+            -- Start the fruit detection loop
+            task.spawn(function()
+                while detectionCollectionActive do
+                    detectAndCollectFruits()
+                    task.wait(scanInterval) -- Wait before next scan
+                end
+            end)
+        else
+            Rayfield:Notify({
+                Title = "Detection Collection",
+                Content = "Disabled fruit detection and collection.",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+-- END OF DETECTION COLLECTION ---------------------------------------------------------------------------------------------------------------------------------
+

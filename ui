@@ -177,31 +177,31 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
     handleCorner.CornerRadius = UDim.new(0, 6)
 
     -- Dragging Logic
+    local userInputService = game:GetService("UserInputService")
+    local dragging = false
+
     sliderHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local dragging = true
-            local userInputService = game:GetService("UserInputService")
+            dragging = true
+        end
+    end)
 
-            local moveConnection
-            moveConnection = userInputService.InputChanged:Connect(function(mouseInput)
-                if mouseInput.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-                    local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
-                    local percent = x / sliderBar.AbsoluteSize.X
-                    local value = math.floor(min + percent * (max - min))
-                    sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
-                    valueLabel.Text = "Value: " .. tostring(value)
-                    if callback then
-                        callback(value) -- Trigger the callback with the new value
-                    end
-                end
-            end)
+    userInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 
-            input.InputEnded:Connect(function()
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dragging = false
-                    moveConnection:Disconnect()
-                end
-            end)
+    userInputService.InputChanged:Connect(function(mouseInput)
+        if dragging and mouseInput.UserInputType == Enum.UserInputType.MouseMovement then
+            local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
+            local percent = x / sliderBar.AbsoluteSize.X
+            local value = math.floor(min + percent * (max - min))
+            sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
+            valueLabel.Text = "Value: " .. tostring(value)
+            if callback then
+                callback(value) -- Trigger the callback with the new value
+            end
         end
     end)
 end

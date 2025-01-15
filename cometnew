@@ -659,7 +659,7 @@ local bossData = {
     ["Don Swan"] = {Position = Vector3.new(-3900, 210, 4600)}
 }
 
--- Security Kick Prevention
+-- === Step 1: Security Kick Prevention ===
 local function preventSecurityKick()
     local mt = getrawmetatable(game)
     setreadonly(mt, false)
@@ -678,7 +678,7 @@ local function preventSecurityKick()
     print("[Anti-Cheat Bypass] Security kick prevention enabled.")
 end
 
--- Utility: Notify the Player
+-- === Step 2: Notify Player ===
 local function notify(title, content, duration)
     Rayfield:Notify({
         Title = title,
@@ -687,7 +687,7 @@ local function notify(title, content, duration)
     })
 end
 
--- Find a Boss in the Correct Folder
+-- === Step 3: Find a Boss ===
 local function findBoss(bossName)
     local enemiesFolder = workspace:FindFirstChild("Enemies")
     if not enemiesFolder then
@@ -704,32 +704,36 @@ local function findBoss(bossName)
     return nil
 end
 
--- Smart Teleportation (Incremental Movement)
+-- === Step 4: Pathfinding-Based Teleportation ===
 local function safeTeleport(targetPosition)
     local character = player.Character
+    local humanoid = character and character:FindFirstChild("Humanoid")
     local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
 
-    if humanoidRootPart then
-        local currentPosition = humanoidRootPart.Position
-        local direction = (targetPosition - currentPosition).Unit
-        local distance = (targetPosition - currentPosition).Magnitude
+    if humanoid and humanoidRootPart then
+        local path = pathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            AgentJumpHeight = 10,
+            AgentMaxSlope = 45,
+        })
 
-        local maxStep = 30 -- Move incrementally in steps of 30 studs
-        local steps = math.ceil(distance / maxStep)
-
-        for i = 1, steps do
-            if not autoBossActive then break end
-            local stepPosition = currentPosition + direction * math.min(maxStep, distance - (i - 1) * maxStep)
-            humanoidRootPart.CFrame = CFrame.new(stepPosition)
-            task.wait(0.3) -- Simulate human-like movement
+        path:ComputeAsync(humanoidRootPart.Position, targetPosition)
+        if path.Status == Enum.PathStatus.Complete then
+            for _, waypoint in pairs(path:GetWaypoints()) do
+                humanoid:MoveTo(waypoint.Position)
+                humanoid.MoveToFinished:Wait()
+                task.wait(0.1) -- Simulate realistic movement
+            end
+        else
+            warn("[Auto Boss] Pathfinding failed to compute a valid path.")
+            humanoidRootPart.CFrame = CFrame.new(targetPosition + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))) -- Teleport fallback
         end
-
-        -- Final Teleport Adjustment
-        humanoidRootPart.CFrame = CFrame.new(targetPosition)
     end
 end
 
--- Equip the Best Weapon
+-- === Step 5: Equip the Best Weapon ===
 local function equipBestWeapon()
     local character = player.Character or player.CharacterAdded:Wait()
     local backpack = player.Backpack
@@ -742,7 +746,7 @@ local function equipBestWeapon()
     end
 
     table.sort(tools, function(a, b)
-        return a.Name > b.Name -- Alphabetical ranking (can be customized)
+        return a.Name > b.Name -- Alphabetical ranking (replace with your ranking logic)
     end)
 
     local bestWeapon = tools[1]
@@ -752,25 +756,24 @@ local function equipBestWeapon()
     end
 end
 
--- Attack a Boss with Safety
+-- === Step 6: Attack a Boss ===
 local function attackBoss(boss)
     local character = player.Character
     local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
 
     if humanoidRootPart and boss and boss:FindFirstChild("HumanoidRootPart") then
         repeat
-            -- Stay slightly above the boss to avoid direct hits
-            humanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+            humanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0) -- Stay slightly above
             local combatTool = character:FindFirstChildOfClass("Tool")
             if combatTool then
                 combatTool:Activate()
             end
-            task.wait(math.random(0.2, 0.4)) -- Randomized attack delay
+            task.wait(math.random(0.2, 0.4)) -- Randomized delay
         until not boss or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 or not autoBossActive
     end
 end
 
--- Main Auto Boss Farming Logic
+-- === Step 7: Main Auto Boss Logic ===
 local function autoBossFarm()
     preventSecurityKick() -- Enable security kick prevention
 
@@ -787,60 +790,29 @@ local function autoBossFarm()
             else
                 notify("Searching for Boss", "Checking spawn for: " .. bossName, 3)
                 safeTeleport(data.Position)
-                task.wait(math.random(2, 4)) -- Wait for respawn
+                task.wait(math.random(2, 4)) -- Respawn wait
             end
         end
         task.wait(math.random(3, 5)) -- Delay between scans
     end
 end
 
--- Auto Boss Toggle
+-- === Step 8: Toggle Auto Boss ===
 FarmingTab:CreateToggle({
-    Name = "Anti-Cheat Auto Boss",
+    Name = "Ultimate Auto Boss",
     CurrentValue = false,
-    Flag = "Toggle_AntiCheatAutoBoss",
+    Flag = "Toggle_UltimateAutoBoss",
     Callback = function(Value)
         autoBossActive = Value
         if autoBossActive then
-            notify("Auto Boss", "Starting ultimate boss farm with anti-cheat bypass.", 5)
+            notify("Auto Boss", "Starting the ultimate boss farm.", 5)
             task.spawn(autoBossFarm)
         else
-            notify("Auto Boss", "Stopped ultimate boss farm.", 5)
+            notify("Auto Boss", "Stopped the ultimate boss farm.", 5)
         end
     end,
 })
 
-
-
--- Function to find a new server
-local function getNewServer()
-    local httpService = game:GetService("HttpService")
-    local servers = {}
-    local nextPageCursor = ""
-    local gameId = tostring(game.PlaceId)
-
-    repeat
-        local url = "https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100" .. (nextPageCursor ~= "" and "&cursor=" .. nextPageCursor or "")
-        local response = httpService:JSONDecode(game:HttpGet(url))
-
-        if response and response.data then
-            for _, server in ipairs(response.data) do
-                if server.playing < server.maxPlayers then
-                    table.insert(servers, server.id)
-                end
-            end
-            nextPageCursor = response.nextPageCursor
-        else
-            nextPageCursor = nil
-        end
-    until not nextPageCursor
-
-    if #servers > 0 then
-        return servers[math.random(1, #servers)] -- Pick a random server
-    else
-        return nil
-    end
-end
 
 -- END OF AUTO BOSS -- 
 

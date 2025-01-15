@@ -136,47 +136,6 @@ homeLabel.TextScaled = true
 homeLabel.Font = Enum.Font.GothamBold
 homeLabel.BackgroundTransparency = 1
 
--- Sliders
-local sliderFrame = Instance.new("Frame", homeTab)
-sliderFrame.Size = UDim2.new(0, 300, 0, 50)
-sliderFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-local sliderText = Instance.new("TextLabel", sliderFrame)
-sliderText.Text = "Slider Value: 50"
-sliderText.Size = UDim2.new(1, 0, 0.5, 0)
-sliderText.TextColor3 = Color3.fromRGB(200, 200, 200)
-sliderText.TextScaled = true
-sliderText.Font = Enum.Font.Gotham
-sliderText.BackgroundTransparency = 1
-
-local sliderBar = Instance.new("Frame", sliderFrame)
-sliderBar.Size = UDim2.new(0.9, 0, 0.3, 0)
-sliderBar.Position = UDim2.new(0.05, 0, 0.7, 0)
-sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-
-local sliderHandle = Instance.new("Frame", sliderBar)
-sliderHandle.Size = UDim2.new(0.5, 0, 1, 0) -- Default at 50%
-sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
-
-sliderHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moveConnection
-        moveConnection = game:GetService("UserInputService").InputChanged:Connect(function(mouseInput)
-            if mouseInput.UserInputType == Enum.UserInputType.MouseMovement then
-                local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
-                local percent = x / sliderBar.AbsoluteSize.X
-                sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
-                sliderText.Text = "Slider Value: " .. math.floor(percent * 100)
-            end
-        end)
-
-        input.InputEnded:Connect(function()
-            moveConnection:Disconnect()
-        end)
-    end
-end)
-
 -- Add additional features below this line with ease
 -- Function to Create a Slider
 local function createSlider(parent, position, size, min, max, defaultValue, callback)

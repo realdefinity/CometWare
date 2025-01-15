@@ -1,0 +1,913 @@
+local Rayfield = loadstring(game:HttpGet('https://pastebin.com/raw/dxqPZt0L'))()
+local Window = Rayfield:CreateWindow({
+    Name = "Comet ︱BETA",
+    Icon = 0, -- Set an icon if needed
+    LoadingTitle = "Comet︱BETA",
+    LoadingSubtitle = "by Definity",
+    Theme = "Default",
+    DisableRayfieldPrompts = false
+})
+
+-- Compatibility Check
+local requiredFunctions = {
+    firetouchinterest = { "Kill Aura" },
+    fireclickdetector = { "Auto Chest" },
+    firesignal = { "Advanced Interactions" },
+    getconnections = { "Event Hooks" },
+    getsenv = { "Advanced Debugging" },
+    getrawmetatable = { "Anti-Cheat Bypass" },
+    setupvalue = { "Advanced Debugging" },
+    getupvalue = { "Advanced Debugging" }
+}
+
+local passes, fails, totalFunctions = 0, 0, 0
+local failedFunctions = {}
+
+-- Function to test if a global function exists
+local function testGlobal(funcName)
+    totalFunctions = totalFunctions + 1
+    local func = rawget(getgenv(), funcName) or _G[funcName] -- Check both getgenv and _G for flexibility
+
+    if typeof(func) == "function" then
+        passes = passes + 1
+        return true
+    else
+        fails = fails + 1
+        table.insert(failedFunctions, funcName)
+        return false
+    end
+end
+
+-- Perform Compatibility Tests
+for funcName, _ in pairs(requiredFunctions) do
+    testGlobal(funcName)
+end
+
+-- Calculate Compatibility
+local compatibilityPercent = math.floor((passes / totalFunctions) * 100)
+local executorInfo = identifyexecutor and identifyexecutor() or "Unknown Executor"
+
+-- Notify User
+Rayfield:Notify({
+    Title = "Executor Compatibility Check",
+    Content = "Executor: " .. executorInfo ..
+        "\nCompatibility: " .. compatibilityPercent .. "% of required functions supported.",
+    Duration = 10,
+    Image = 4483362458 -- Replace with your desired image ID
+})
+
+-- Add Executor Info to Rayfield UI
+local ExecutorTab = Window:CreateTab("Executor Info", 4483362458) -- Executor Info Tab
+ExecutorTab:CreateSection("UNC Compatibility Check")
+ExecutorTab:CreateLabel("Executor: " .. executorInfo)
+ExecutorTab:CreateLabel("Compatibility: " .. compatibilityPercent .. "%")
+ExecutorTab:CreateLabel("Functions Passed: " .. passes)
+ExecutorTab:CreateLabel("Functions Failed: " .. fails)
+
+-- Add Failed Functions to Tab
+if #failedFunctions > 0 then
+    ExecutorTab:CreateSection("Failed Functions")
+    for _, funcName in ipairs(failedFunctions) do
+        ExecutorTab:CreateLabel(funcName .. ": ❌")
+    end
+else
+    ExecutorTab:CreateLabel("All functions passed successfully! ✅")
+end
+
+local PlayerTab = Window:CreateTab("Player", 4483362458) -- Title, Image
+
+PlayerTab:CreateSlider({
+    Name = "Walkspeed",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 10,
+    Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character:SetAttribute("SpeedMultiplier", Value)
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Dash Length",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = "Length",
+    CurrentValue = 10,
+    Flag = "Slider2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character:SetAttribute("DashLength", Value)
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Jump Height",
+    Range = {0, 1000},
+    Increment = 1,
+    Suffix = "Height",
+    CurrentValue = 10,
+    Flag = "Slider3", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Max Health",
+    Range = {0, 1000},
+    Increment = 1,
+    Suffix = "Maxhealth",
+    CurrentValue = 10,
+    Flag = "Slider4", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.MaxHealth = Value
+    end,
+})
+-- START OF AUTO KILL --
+
+-- Auto Kill v2.0: Optimized for Smooth Performance
+local autoKillActive = false
+local autoTeleport = true -- Toggle teleportation
+local autoUseAbilitiesActive = false -- Toggle auto-use abilities
+local clickInterval = 0.1 -- Reduced interval for smoother clicks
+local teleportSmoothing = 0.1 -- Time to blend teleportation
+local abilityCooldowns = {
+    ["Z"] = 3, -- Cooldown for Z ability
+    ["X"] = 5, -- Cooldown for X ability
+    ["C"] = 7, -- Cooldown for C ability
+    ["V"] = 10 -- Cooldown for V ability
+}
+local lastAbilityUse = {} -- Tracks ability usage times
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local currentBestWeapon = nil -- Cache for the best weapon
+
+-- Full Weapon Rankings (higher is better)
+local weaponRankings = {
+    ["Dark Blade"] = 100, -- Top-tier legendary weapon
+    ["Tushita"] = 98,
+    ["Yoru (V2)"] = 97,
+    ["Rengoku"] = 95,
+    ["Pole (2nd Form)"] = 90,
+    ["Shisui"] = 85,
+    ["Warden Sword"] = 80,
+    ["Canvander"] = 78,
+    ["Soul Cane"] = 75,
+    ["Midnight Blade"] = 70,
+    ["Saber (V2)"] = 65,
+    ["Dragon Trident"] = 64,
+    ["Buddy Sword"] = 62,
+    ["Dual-Headed Blade"] = 60,
+    ["Hallow Scythe"] = 59,
+    ["Bisento"] = 55,
+    ["True Triple Katana"] = 54,
+    ["Trident"] = 52,
+    ["Dark Dagger"] = 50,
+    ["Pole (1st Form)"] = 49,
+    ["Iron Mace"] = 47,
+    ["Triple Katana"] = 45,
+    ["Longsword"] = 43,
+    ["Katana"] = 40,
+    ["Cutlass"] = 38,
+    ["Dual Katana"] = 37,
+    ["Shark Saw"] = 35,
+    ["Twin Hooks"] = 33,
+    ["Gravity Cane"] = 32,
+    ["Iron Scythe"] = 31,
+    ["Pipe"] = 30,
+    ["Jitte"] = 28,
+    ["Twin Daggers"] = 26,
+    ["Electro"] = 25,
+    ["Water Kung Fu"] = 24,
+    ["Dragon Breath"] = 23,
+    ["Superhuman"] = 22,
+    ["Death Step"] = 21,
+    ["Sharkman Karate"] = 20,
+    ["Electric Claw"] = 19,
+    ["Dragon Talon"] = 18,
+    ["Combat"] = 1 -- Default tool
+}
+
+-- Function to determine the best weapon in the player's inventory (runs once)
+local function determineBestWeapon()
+    local player = game.Players.LocalPlayer
+    local backpack = player.Backpack
+    local bestWeapon = nil
+    local bestRank = -math.huge
+
+    for _, tool in pairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and weaponRankings[tool.Name] then
+            local rank = weaponRankings[tool.Name]
+            if rank > bestRank then
+                bestWeapon = tool
+                bestRank = rank
+            end
+        end
+    end
+
+    currentBestWeapon = bestWeapon -- Cache the best weapon
+end
+
+-- Function to find the closest enemy
+local function findClosestEnemy()
+    local player = game.Players.LocalPlayer
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+
+    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+        if enemy:IsA("Model") and enemy.Name == "Bandit" and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            local distance = (enemy.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestEnemy = enemy
+            end
+        end
+    end
+    return closestEnemy
+end
+
+-- Function to teleport smoothly to the enemy
+local function teleportSmoothly(playerRoot, targetCFrame)
+    if not playerRoot then return end
+    local initialCFrame = playerRoot.CFrame
+    local startTime = tick()
+
+    while tick() - startTime < teleportSmoothing do
+        local alpha = (tick() - startTime) / teleportSmoothing
+        playerRoot.CFrame = initialCFrame:Lerp(targetCFrame, alpha)
+        task.wait()
+    end
+
+    playerRoot.CFrame = targetCFrame -- Finalize position
+end
+
+-- Function to simulate targeted mouse clicking
+local function simulateTargetedMouseClick(target)
+    local camera = game.Workspace.CurrentCamera
+    local screenPosition, onScreen = camera:WorldToViewportPoint(target.Position)
+    if onScreen then
+        VirtualInputManager:SendMouseButtonEvent(
+            screenPosition.X, -- Target position on screen
+            screenPosition.Y, -- Target position on screen
+            0, -- MouseButton1 (Left Click)
+            true, -- Button down
+            game, -- Target instance
+            0 -- Input delay
+        )
+        task.wait(0.02) -- Brief delay between down and up events
+        VirtualInputManager:SendMouseButtonEvent(
+            screenPosition.X,
+            screenPosition.Y,
+            0, -- MouseButton1 (Left Click)
+            false, -- Button up
+            game,
+            0
+        )
+    end
+end
+
+-- Function to attack the enemy directly
+local function attackEnemy(enemy)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = enemy:FindFirstChild("Humanoid")
+    local humanoidRootPart = enemy:FindFirstChild("HumanoidRootPart")
+
+    if humanoid and humanoidRootPart and currentBestWeapon then
+        -- Equip the cached best weapon
+        if not currentBestWeapon:IsDescendantOf(character) then
+            character.Humanoid:EquipTool(currentBestWeapon)
+        end
+
+        -- Simulate targeted mouse clicking to attack
+        simulateTargetedMouseClick(humanoidRootPart)
+    end
+end
+
+-- Function to handle teleportation
+local function teleportToEnemy(enemy)
+    if not autoTeleport then return end
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local playerRoot = character and character:FindFirstChild("HumanoidRootPart")
+    local humanoidRootPart = enemy:FindFirstChild("HumanoidRootPart")
+
+    if playerRoot and humanoidRootPart then
+        teleportSmoothly(playerRoot, humanoidRootPart.CFrame * CFrame.new(0, 0, -3)) -- Smooth teleport
+    end
+end
+
+-- Function to handle auto-killing logic
+local function autoKill()
+    determineBestWeapon() -- Find the best weapon once when starting auto-kill
+    while autoKillActive do
+        local closestEnemy = findClosestEnemy()
+        if closestEnemy then
+            teleportToEnemy(closestEnemy) -- Teleport only if enabled
+            attackEnemy(closestEnemy) -- Attack the enemy
+        end
+        task.wait(clickInterval) -- Smooth the process
+    end
+end
+
+-- Auto Kill Toggle
+local FarmingTab = Window:CreateTab("Farming", 4483362458) -- Farming Tab
+FarmingTab:CreateToggle({
+    Name = "Auto Kill Bandits",
+    CurrentValue = false,
+    Flag = "Toggle6", -- Unique flag for Auto Kill toggle
+    Callback = function(Value)
+        autoKillActive = Value
+
+        if autoKillActive then
+            task.spawn(autoKill)
+        else
+            print("Auto Kill disabled.")
+        end
+    end,
+})
+
+-- Auto Teleport Toggle
+FarmingTab:CreateToggle({
+    Name = "Auto Teleport to Enemy",
+    CurrentValue = true,
+    Flag = "Toggle7", -- Unique flag for Auto Teleport toggle
+    Callback = function(Value)
+        autoTeleport = Value
+        if autoTeleport then
+            print("Auto Teleport enabled.")
+        else
+            print("Auto Teleport disabled.")
+        end
+    end,
+})
+
+-- Auto Use Abilities Toggle
+FarmingTab:CreateToggle({
+    Name = "Auto Use Abilities",
+    CurrentValue = false,
+    Flag = "Toggle8", -- Unique flag for Auto Use Abilities toggle
+    Callback = function(Value)
+        autoUseAbilitiesActive = Value
+
+        if autoUseAbilitiesActive then
+            task.spawn(autoUseAbilities)
+        else
+            print("Auto Use Abilities disabled.")
+        end
+    end,
+})
+
+-- END OF AUTO KILL --
+
+
+-- Auto Upgrade Stats Feature
+local autoUpgradeActive = false
+
+-- Function to upgrade a specific stat
+local function upgradeStat(statName)
+    local statFunction = game:GetService("ReplicatedStorage").Remotes.CommF_
+
+    -- Attempt to invoke the game's stat upgrade function
+    local success, result = pcall(function()
+        return statFunction:InvokeServer("AddPoint", statName)
+    end)
+
+    if not success then
+        warn("Failed to upgrade stat:", statName, result) -- Log errors without breaking the script
+    else
+        print("Successfully upgraded stat:", statName)
+    end
+end
+
+-- Auto Upgrade Stats Toggle
+FarmingTab:CreateToggle({
+    Name = "Auto Upgrade Stats",
+    CurrentValue = false,
+    Flag = "Toggle7", -- Unique flag for Auto Upgrade Stats toggle
+    Callback = function(Value)
+        autoUpgradeActive = Value
+
+        if autoUpgradeActive then
+            task.spawn(function()
+                while autoUpgradeActive do
+                    local player = game.Players.LocalPlayer
+                    local data = player:FindFirstChild("Data")
+                    if data and data:FindFirstChild("Points") then
+                        local availablePoints = data.Points.Value
+                        if availablePoints > 0 then
+                            -- Randomly select a stat to upgrade based on weighted chances
+                            local randomValue = math.random(1, 100)
+
+                            if randomValue <= 50 then
+                                upgradeStat("Melee") -- 50% chance
+                            elseif randomValue <= 70 then
+                                upgradeStat("Defense") -- 20% chance
+                            elseif randomValue <= 85 then
+                                upgradeStat("Sword") -- 15% chance
+                            elseif randomValue <= 95 then
+                                upgradeStat("Gun") -- 10% chance
+                            elseif randomValue <= 100 then
+                                upgradeStat("Bloxfruit") -- 5% chance
+                            end
+                        else
+                            print("No stat points available to spend.")
+                        end
+                    else
+                        print("Player data or points not found.")
+                    end
+                    task.wait(0.5) -- Check for available points every 0.5 seconds
+                end
+            end)
+        end
+    end,
+})
+
+-- Function to reinject the script
+local function reinjectScript()
+    local scriptUrl = 'https://pastebin.com/raw/u45QHeEA' -- Replace with your script's URL
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(scriptUrl))()
+    end)
+
+    if success then
+        Rayfield:Notify({
+            Title = "Reinject Successful",
+            Content = "The script has been successfully reinjected!",
+            Duration = 6,
+        })
+    else
+        Rayfield:Notify({
+            Title = "Reinject Failed",
+            Content = "Error: " .. tostring(err),
+            Duration = 6,
+        })
+    end
+end
+
+-- Add Reinject Button to UI
+local MiscTab = Window:CreateTab("Misc", 4483362458) -- Misc Tab
+MiscTab:CreateButton({
+    Name = "Reinject Script",
+    Callback = function()
+        reinjectScript()
+    end
+})
+
+-- Function to uninject the script
+local function uninjectScript()
+    for _, connection in pairs(getconnections(game:GetService("RunService").Stepped)) do
+        connection:Disable()
+    end
+    Rayfield:Destroy() -- Destroys the Rayfield UI
+    Rayfield:Notify({
+        Title = "Uninject Successful",
+        Content = "The script has been successfully removed.",
+        Duration = 6,
+    })
+end
+
+-- Add Uninject Button to UI
+MiscTab:CreateButton({
+    Name = "Uninject Script",
+    Callback = function()
+        uninjectScript()
+    end
+})
+-- Function to prevent AFK detection
+local function antiAFK()
+    local player = game.Players.LocalPlayer
+    local virtualUser = game:service("VirtualUser")
+
+    -- Connect to the idle event
+    player.Idled:Connect(function()
+        virtualUser:CaptureController()
+        virtualUser:ClickButton2(Vector2.new(0, 0))
+        Rayfield:Notify({
+            Title = "Anti-AFK Active",
+            Content = "You will not be kicked for being AFK.",
+            Duration = 4,
+        })
+    end)
+end
+
+-- Activate Anti-AFK
+antiAFK()
+
+-- Add a toggle to the UI
+MiscTab:CreateToggle({
+    Name = "Anti-AFK",
+    CurrentValue = true, -- Default to enabled
+    Flag = "Toggle_AntiAFK",
+    Callback = function(Value)
+        if Value then
+            antiAFK()
+        end
+    end
+})
+
+local fpsBoostActive = false
+
+-- Function to enable FPS Booster
+local function enableFPSBooster()
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") or v:IsA("Decal") or v:IsA("ParticleEmitter") or v:IsA("Beam") then
+            v.Transparency = 1
+            if v:IsA("BasePart") then
+                v.Material = Enum.Material.SmoothPlastic
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v:Destroy()
+            end
+        elseif v:IsA("Light") then
+            v.Enabled = false
+        end
+    end
+
+    -- Disable global settings for rendering
+    game:GetService("Lighting").GlobalShadows = false
+    game:GetService("Lighting").FogEnd = 9e9
+    game:GetService("Lighting").Brightness = 0
+
+    fpsBoostActive = true
+    Rayfield:Notify({
+        Title = "FPS Booster Enabled",
+        Content = "Rendering optimizations applied.",
+        Duration = 4,
+    })
+end
+
+-- Function to disable FPS Booster
+local function disableFPSBooster()
+    game:GetService("Lighting").GlobalShadows = true
+    game:GetService("Lighting").FogEnd = 1000
+    game:GetService("Lighting").Brightness = 2
+
+    fpsBoostActive = false
+    Rayfield:Notify({
+        Title = "FPS Booster Disabled",
+        Content = "Rendering settings restored.",
+        Duration = 4,
+    })
+end
+
+-- Add Toggle for FPS Booster in the Misc Tab
+MiscTab:CreateToggle({
+    Name = "FPS Booster",
+    CurrentValue = false, -- Default to off
+    Flag = "Toggle_FPSBooster",
+    Callback = function(Value)
+        if Value and not fpsBoostActive then
+            enableFPSBooster()
+        elseif not Value and fpsBoostActive then
+            disableFPSBooster()
+        end
+    end
+})
+-- Available Themes
+local themes = {
+    "Default",
+    "Amber Glow",
+    "Amethyst",
+    "Bloom",
+    "Dark Blue",
+    "Green",
+    "Light",
+    "Ocean",
+    "Serenity"
+}
+
+-- Theme Identifier Mapping
+local themeIdentifiers = {
+    ["Default"] = "Default",
+    ["Amber Glow"] = "AmberGlow",
+    ["Amethyst"] = "Amethyst",
+    ["Bloom"] = "Bloom",
+    ["Dark Blue"] = "DarkBlue",
+    ["Green"] = "Green",
+    ["Light"] = "Light",
+    ["Ocean"] = "Ocean",
+    ["Serenity"] = "Serenity"
+}
+
+-- Function to Change UI Theme
+local function changeTheme(selectedTheme)
+    local themeIdentifier = themeIdentifiers[selectedTheme]
+    if themeIdentifier then
+        Rayfield:ChangeTheme(themeIdentifier)
+        Rayfield:Notify({
+            Title = "UI Theme Changed",
+            Content = "New Theme: " .. selectedTheme,
+            Duration = 4,
+        })
+    else
+        Rayfield:Notify({
+            Title = "Theme Error",
+            Content = "Invalid theme selected.",
+            Duration = 4,
+        })
+    end
+end
+
+-- Add UI Customization Tab
+local UITab = Window:CreateTab("UI Customization", 4483362458) -- UI Tab
+
+-- Theme Selector
+UITab:CreateDropdown({
+    Name = "Select UI Theme",
+    Options = themes,
+    CurrentOption = "Default",
+    Flag = "Dropdown_UITheme",
+    Callback = function(selectedTheme)
+        changeTheme(selectedTheme)
+    end
+})
+
+-- UI Reset Button
+UITab:CreateButton({
+    Name = "Reset UI Position",
+    Callback = function()
+        Rayfield:Destroy() -- Destroy and reload the UI
+        Rayfield:Reload()
+        Rayfield:Notify({
+            Title = "UI Reset",
+            Content = "UI position and layout have been reset.",
+            Duration = 4,
+        })
+    end
+})
+
+-- START OF AUTO BOSS -- 
+
+local autoBossActive = false
+local pathfindingService = game:GetService("PathfindingService")
+local player = game.Players.LocalPlayer
+
+-- Define Boss Data
+local bossData = {
+    ["The Saw"] = {Position = Vector3.new(-1104, 5, 4357)},
+    ["Mob Leader"] = {Position = Vector3.new(-2848, 7, 5353)},
+    ["Saber Expert"] = {Position = Vector3.new(-1428, 29, -749)},
+    ["Warden"] = {Position = Vector3.new(-4200, 210, 4300)},
+    ["Chief Warden"] = {Position = Vector3.new(-4300, 210, 4300)},
+    ["Swan"] = {Position = Vector3.new(-4500, 210, 4300)},
+    ["Ice Admiral"] = {Position = Vector3.new(700, 390, -6800)},
+    ["Don Swan"] = {Position = Vector3.new(-3900, 210, 4600)}
+}
+
+-- Security Kick Prevention
+local function preventSecurityKick()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNamecall = mt.__namecall
+
+    mt.__namecall = function(self, ...)
+        local method = getnamecallmethod()
+        if tostring(self) == "Players" and method == "Kick" then
+            warn("[Anti-Cheat] Kick attempt blocked!")
+            return
+        end
+        return oldNamecall(self, ...)
+    end
+
+    setreadonly(mt, true)
+    print("[Anti-Cheat Bypass] Security kick prevention enabled.")
+end
+
+-- Utility: Notify the Player
+local function notify(title, content, duration)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = duration or 5,
+    })
+end
+
+-- Find a Boss in the Correct Folder
+local function findBoss(bossName)
+    local enemiesFolder = workspace:FindFirstChild("Enemies")
+    if not enemiesFolder then
+        warn("[Auto Boss] Enemies folder not found.")
+        return nil
+    end
+
+    for _, enemy in pairs(enemiesFolder:GetChildren()) do
+        if enemy:IsA("Model") and enemy.Name:lower():find(bossName:lower()) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            return enemy
+        end
+    end
+
+    return nil
+end
+
+-- Smart Teleportation (Incremental Movement)
+local function safeTeleport(targetPosition)
+    local character = player.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        local currentPosition = humanoidRootPart.Position
+        local direction = (targetPosition - currentPosition).Unit
+        local distance = (targetPosition - currentPosition).Magnitude
+
+        local maxStep = 30 -- Move incrementally in steps of 30 studs
+        local steps = math.ceil(distance / maxStep)
+
+        for i = 1, steps do
+            if not autoBossActive then break end
+            local stepPosition = currentPosition + direction * math.min(maxStep, distance - (i - 1) * maxStep)
+            humanoidRootPart.CFrame = CFrame.new(stepPosition)
+            task.wait(0.3) -- Simulate human-like movement
+        end
+
+        -- Final Teleport Adjustment
+        humanoidRootPart.CFrame = CFrame.new(targetPosition)
+    end
+end
+
+-- Equip the Best Weapon
+local function equipBestWeapon()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local backpack = player.Backpack
+    local tools = {}
+
+    for _, tool in pairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            table.insert(tools, tool)
+        end
+    end
+
+    table.sort(tools, function(a, b)
+        return a.Name > b.Name -- Alphabetical ranking (can be customized)
+    end)
+
+    local bestWeapon = tools[1]
+    if bestWeapon and not bestWeapon:IsDescendantOf(character) then
+        character.Humanoid:EquipTool(bestWeapon)
+        notify("Weapon Equipped", "Equipped: " .. bestWeapon.Name, 3)
+    end
+end
+
+-- Attack a Boss with Safety
+local function attackBoss(boss)
+    local character = player.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart and boss and boss:FindFirstChild("HumanoidRootPart") then
+        repeat
+            -- Stay slightly above the boss to avoid direct hits
+            humanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+            local combatTool = character:FindFirstChildOfClass("Tool")
+            if combatTool then
+                combatTool:Activate()
+            end
+            task.wait(math.random(0.2, 0.4)) -- Randomized attack delay
+        until not boss or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 or not autoBossActive
+    end
+end
+
+-- Main Auto Boss Farming Logic
+local function autoBossFarm()
+    preventSecurityKick() -- Enable security kick prevention
+
+    while autoBossActive do
+        for bossName, data in pairs(bossData) do
+            if not autoBossActive then break end
+            local boss = findBoss(bossName)
+
+            if boss then
+                notify("Boss Found", "Engaging: " .. bossName, 3)
+                safeTeleport(boss.HumanoidRootPart.Position)
+                equipBestWeapon()
+                attackBoss(boss)
+            else
+                notify("Searching for Boss", "Checking spawn for: " .. bossName, 3)
+                safeTeleport(data.Position)
+                task.wait(math.random(2, 4)) -- Wait for respawn
+            end
+        end
+        task.wait(math.random(3, 5)) -- Delay between scans
+    end
+end
+
+-- Auto Boss Toggle
+FarmingTab:CreateToggle({
+    Name = "Anti-Cheat Auto Boss",
+    CurrentValue = false,
+    Flag = "Toggle_AntiCheatAutoBoss",
+    Callback = function(Value)
+        autoBossActive = Value
+        if autoBossActive then
+            notify("Auto Boss", "Starting ultimate boss farm with anti-cheat bypass.", 5)
+            task.spawn(autoBossFarm)
+        else
+            notify("Auto Boss", "Stopped ultimate boss farm.", 5)
+        end
+    end,
+})
+
+
+
+-- Function to find a new server
+local function getNewServer()
+    local httpService = game:GetService("HttpService")
+    local servers = {}
+    local nextPageCursor = ""
+    local gameId = tostring(game.PlaceId)
+
+    repeat
+        local url = "https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100" .. (nextPageCursor ~= "" and "&cursor=" .. nextPageCursor or "")
+        local response = httpService:JSONDecode(game:HttpGet(url))
+
+        if response and response.data then
+            for _, server in ipairs(response.data) do
+                if server.playing < server.maxPlayers then
+                    table.insert(servers, server.id)
+                end
+            end
+            nextPageCursor = response.nextPageCursor
+        else
+            nextPageCursor = nil
+        end
+    until not nextPageCursor
+
+    if #servers > 0 then
+        return servers[math.random(1, #servers)] -- Pick a random server
+    else
+        return nil
+    end
+end
+
+-- END OF AUTO BOSS -- 
+
+-- Function to queue on teleport and hop to a new server
+local function serverHop()
+    local newServerId = getNewServer()
+    if newServerId then
+        -- Queue on teleport: this script will rerun in the new server
+        queue_on_teleport = queue_on_teleport or syn.queue_on_teleport or fluxus.queue_on_teleport
+        if queue_on_teleport then
+            queue_on_teleport([[loadstring(game:HttpGet('https://pastebin.com/raw/u45QHeEA'))()]]) -- Replace with your script URL
+        end
+
+        -- Notify and teleport
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, newServerId, game.Players.LocalPlayer)
+        Rayfield:Notify({
+            Title = "Server Hop",
+            Content = "Joining a new server...",
+            Duration = 6,
+        })
+    else
+        Rayfield:Notify({
+            Title = "Server Hop Failed",
+            Content = "No suitable servers found.",
+            Duration = 6,
+        })
+    end
+end
+
+-- Add Server Hop Button to the Misc Tab
+MiscTab:CreateButton({
+    Name = "Server Hop",
+    Callback = function()
+        serverHop()
+    end
+})
+
+local cooldownBypassActive = false
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+-- Keys for abilities
+local abilityKeys = { "Z", "X", "C", "V" }
+
+-- Function to spam abilities and bypass cooldowns
+local function bypassCooldowns()
+    while cooldownBypassActive do
+        for _, key in ipairs(abilityKeys) do
+            -- Simulate pressing the ability key
+            VirtualInputManager:SendKeyEvent(true, key, false, game)
+            task.wait(0.05) -- Small delay to simulate keypress
+            VirtualInputManager:SendKeyEvent(false, key, false, game)
+        end
+        task.wait(0.1) -- Adjust delay to control spam rate
+    end
+end
+
+-- Add Toggle to Misc Tab
+MiscTab:CreateToggle({
+    Name = "Bypass Ability Cooldowns",
+    CurrentValue = false,
+    Flag = "ToggleCooldownBypass",
+    Callback = function(Value)
+        cooldownBypassActive = Value
+        if cooldownBypassActive then
+            print("[Cooldown Bypass] Enabled.")
+            task.spawn(bypassCooldowns)
+        else
+            print("[Cooldown Bypass] Disabled.")
+        end
+    end
+})

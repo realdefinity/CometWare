@@ -178,3 +178,88 @@ sliderHandle.InputBegan:Connect(function(input)
 end)
 
 -- Add additional features below this line with ease
+-- Function to Create a Slider
+local function createSlider(parent, position, size, min, max, defaultValue, callback)
+    -- Slider Frame
+    local sliderFrame = Instance.new("Frame", parent)
+    sliderFrame.Size = size or UDim2.new(0, 300, 0, 50)
+    sliderFrame.Position = position or UDim2.new(0.5, -150, 0.5, -25)
+    sliderFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+    local sliderCorner = Instance.new("UICorner", sliderFrame)
+    sliderCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Value Label
+    local valueLabel = Instance.new("TextLabel", sliderFrame)
+    valueLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    valueLabel.Position = UDim2.new(0, 0, 0, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = "Value: " .. tostring(defaultValue)
+    valueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    valueLabel.TextScaled = true
+    valueLabel.Font = Enum.Font.Gotham
+
+    -- Slider Bar
+    local sliderBar = Instance.new("Frame", sliderFrame)
+    sliderBar.Size = UDim2.new(0.9, 0, 0.3, 0)
+    sliderBar.Position = UDim2.new(0.05, 0, 0.6, 0)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+    local barCorner = Instance.new("UICorner", sliderBar)
+    barCorner.CornerRadius = UDim.new(0, 6)
+
+    -- Slider Handle
+    local sliderHandle = Instance.new("Frame", sliderBar)
+    sliderHandle.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0) -- Default position
+    sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+
+    local handleCorner = Instance.new("UICorner", sliderHandle)
+    handleCorner.CornerRadius = UDim.new(0, 6)
+
+    -- Dragging Logic
+    sliderHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local dragging = true
+            local userInputService = game:GetService("UserInputService")
+
+            local moveConnection
+            moveConnection = userInputService.InputChanged:Connect(function(mouseInput)
+                if mouseInput.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+                    local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
+                    local percent = x / sliderBar.AbsoluteSize.X
+                    local value = math.floor(min + percent * (max - min))
+                    sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
+                    valueLabel.Text = "Value: " .. tostring(value)
+                    if callback then
+                        callback(value) -- Trigger the callback with the new value
+                    end
+                end
+            end)
+
+            input.InputEnded:Connect(function()
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                    moveConnection:Disconnect()
+                end
+            end)
+        end
+    end)
+end
+
+-- Example Usage
+local homeTab = Instance.new("Frame") -- Replace with the actual tab or parent frame
+homeTab.Size = UDim2.new(1, 0, 1, 0)
+homeTab.Parent = script.Parent -- Adjust to the actual UI hierarchy
+
+createSlider(
+    homeTab, -- Parent
+    UDim2.new(0.5, 0, 0.5, 0), -- Position
+    UDim2.new(0, 300, 0, 50), -- Size
+    0, -- Min value
+    100, -- Max value
+    50, -- Default value
+    function(value) -- Callback
+        print("Slider value changed to:", value)
+    end
+)

@@ -1,11 +1,11 @@
 -- Ensure Only One Instance of the UI
-if game.CoreGui:FindFirstChild("SimpleUI") then
-    game.CoreGui.SimpleUI:Destroy()
+if game.CoreGui:FindFirstChild("CustomUI") then
+    game.CoreGui.CustomUI:Destroy()
 end
 
 -- ScreenGui and Main Frame
 local screenGui = Instance.new("ScreenGui", game.CoreGui)
-screenGui.Name = "SimpleUI"
+screenGui.Name = "CustomUI"
 
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Name = "MainFrame"
@@ -17,13 +17,50 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 local uiCorner = Instance.new("UICorner", mainFrame)
 uiCorner.CornerRadius = UDim.new(0, 10)
 
+-- UI Movement
+local dragging, dragInput, dragStart, startPos
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
+    end
+end)
+
 -- Title Bar
 local titleBar = Instance.new("Frame", mainFrame)
 titleBar.Size = UDim2.new(1, 0, 0, 40)
 titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 
 local titleText = Instance.new("TextLabel", titleBar)
-titleText.Text = "Simple UI"
+titleText.Text = "Custom UI"
 titleText.Size = UDim2.new(1, -40, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -140,8 +177,4 @@ sliderHandle.InputBegan:Connect(function(input)
     end
 end)
 
--- Add Dropdowns, Toggles, etc. here!
-
--- Open Home Tab by Default
-homeTab.Visible = true
-currentTab = homeTab
+-- Add additional features below this line with ease

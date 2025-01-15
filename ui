@@ -1,0 +1,147 @@
+-- Ensure Only One Instance of the UI
+if game.CoreGui:FindFirstChild("SimpleUI") then
+    game.CoreGui.SimpleUI:Destroy()
+end
+
+-- ScreenGui and Main Frame
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+screenGui.Name = "SimpleUI"
+
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+
+local uiCorner = Instance.new("UICorner", mainFrame)
+uiCorner.CornerRadius = UDim.new(0, 10)
+
+-- Title Bar
+local titleBar = Instance.new("Frame", mainFrame)
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+
+local titleText = Instance.new("TextLabel", titleBar)
+titleText.Text = "Simple UI"
+titleText.Size = UDim2.new(1, -40, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.BackgroundTransparency = 1
+
+local closeButton = Instance.new("TextButton", titleBar)
+closeButton.Text = "X"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0.5, -15)
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+
+local closeCorner = Instance.new("UICorner", closeButton)
+closeCorner.CornerRadius = UDim.new(0, 10)
+
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
+
+-- Tabs
+local tabsFrame = Instance.new("Frame", mainFrame)
+tabsFrame.Size = UDim2.new(1, 0, 0, 40)
+tabsFrame.Position = UDim2.new(0, 0, 0, 40)
+tabsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+
+local tabContainer = Instance.new("Frame", mainFrame)
+tabContainer.Size = UDim2.new(1, 0, 1, -80)
+tabContainer.Position = UDim2.new(0, 0, 0, 80)
+tabContainer.BackgroundTransparency = 1
+
+local currentTab = nil
+
+local function createTab(name)
+    local tabButton = Instance.new("TextButton", tabsFrame)
+    tabButton.Text = name
+    tabButton.Size = UDim2.new(0, 120, 1, 0)
+    tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.TextScaled = true
+
+    local corner = Instance.new("UICorner", tabButton)
+    corner.CornerRadius = UDim.new(0, 8)
+
+    local tabFrame = Instance.new("Frame", tabContainer)
+    tabFrame.Size = UDim2.new(1, 0, 1, 0)
+    tabFrame.BackgroundTransparency = 1
+    tabFrame.Visible = false
+
+    tabButton.MouseButton1Click:Connect(function()
+        if currentTab then
+            currentTab.Visible = false
+        end
+        tabFrame.Visible = true
+        currentTab = tabFrame
+    end)
+
+    return tabFrame
+end
+
+-- Home Tab
+local homeTab = createTab("Home")
+local homeLabel = Instance.new("TextLabel", homeTab)
+homeLabel.Text = "Welcome to Simple UI!"
+homeLabel.Size = UDim2.new(1, 0, 0, 50)
+homeLabel.Position = UDim2.new(0, 0, 0, 10)
+homeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+homeLabel.TextScaled = true
+homeLabel.Font = Enum.Font.GothamBold
+homeLabel.BackgroundTransparency = 1
+
+-- Sliders
+local sliderFrame = Instance.new("Frame", homeTab)
+sliderFrame.Size = UDim2.new(0, 300, 0, 50)
+sliderFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+local sliderText = Instance.new("TextLabel", sliderFrame)
+sliderText.Text = "Slider Value: 50"
+sliderText.Size = UDim2.new(1, 0, 0.5, 0)
+sliderText.TextColor3 = Color3.fromRGB(200, 200, 200)
+sliderText.TextScaled = true
+sliderText.Font = Enum.Font.Gotham
+sliderText.BackgroundTransparency = 1
+
+local sliderBar = Instance.new("Frame", sliderFrame)
+sliderBar.Size = UDim2.new(0.9, 0, 0.3, 0)
+sliderBar.Position = UDim2.new(0.05, 0, 0.7, 0)
+sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+local sliderHandle = Instance.new("Frame", sliderBar)
+sliderHandle.Size = UDim2.new(0.5, 0, 1, 0) -- Default at 50%
+sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+
+sliderHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local moveConnection
+        moveConnection = game:GetService("UserInputService").InputChanged:Connect(function(mouseInput)
+            if mouseInput.UserInputType == Enum.UserInputType.MouseMovement then
+                local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
+                local percent = x / sliderBar.AbsoluteSize.X
+                sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
+                sliderText.Text = "Slider Value: " .. math.floor(percent * 100)
+            end
+        end)
+
+        input.InputEnded:Connect(function()
+            moveConnection:Disconnect()
+        end)
+    end
+end)
+
+-- Add Dropdowns, Toggles, etc. here!
+
+-- Open Home Tab by Default
+homeTab.Visible = true
+currentTab = homeTab

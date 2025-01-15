@@ -430,7 +430,7 @@ FarmingTab:CreateToggle({
 
 -- Function to reinject the script
 local function reinjectScript()
-    local scriptUrl = 'https://pastebin.com/raw/u45QHeEA' -- Replace with your script's URL
+    local scriptUrl = 'https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/cometnew' -- Replace with your script's URL
     local success, err = pcall(function()
         loadstring(game:HttpGet(scriptUrl))()
     end)
@@ -910,10 +910,11 @@ local bossRespawnTimes = {
 }
 local respawnTimers = {} -- Tracks respawn end times for each boss
 
--- Add Respawn Timers to Rayfield UI
+-- Rayfield Section for Respawn Timers
 local respawnSection = FarmingTab:CreateSection("Respawn Timers")
 local respawnLabels = {}
 
+-- Create Labels for Each Boss in Rayfield
 for bossName, _ in pairs(bossRespawnTimes) do
     respawnLabels[bossName] = respawnSection:CreateLabel(bossName .. ": Ready")
 end
@@ -944,13 +945,16 @@ local function setRespawnTimer(bossName)
     end
 end
 
--- Timer Update Loop
+-- Timer Update Loop (Updates Every Second)
 task.spawn(function()
     while true do
         updateRespawnTimers()
         task.wait(1) -- Update every second
     end
 end)
+
+-- Example Usage
+-- Call `setRespawnTimer("The Saw")` when a boss is defeated in your farming logic
 
 -- END OF BOSS RESPAWN TIMER ---------------------------------------------------------------------------------------------------------------------------------
 

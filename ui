@@ -138,16 +138,16 @@ homeLabel.BackgroundTransparency = 1
 
 -- Add additional features below this line with ease
 -- Function to Create a Slider
-local function createSlider(parent, position, size, min, max, defaultValue, callback)
+local function createPolishedSlider(parent, position, size, min, max, defaultValue, callback)
     -- Slider Frame
     local sliderFrame = Instance.new("Frame", parent)
     sliderFrame.Size = size or UDim2.new(0, 300, 0, 50)
     sliderFrame.Position = position or UDim2.new(0.5, -150, 0.5, -25)
     sliderFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 
     local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0, 8)
+    sliderCorner.CornerRadius = UDim.new(0, 10)
 
     -- Value Label
     local valueLabel = Instance.new("TextLabel", sliderFrame)
@@ -155,7 +155,7 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
     valueLabel.Position = UDim2.new(0, 0, 0, 0)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = "Value: " .. tostring(defaultValue)
-    valueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    valueLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     valueLabel.TextScaled = true
     valueLabel.Font = Enum.Font.Gotham
 
@@ -163,7 +163,7 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
     local sliderBar = Instance.new("Frame", sliderFrame)
     sliderBar.Size = UDim2.new(0.9, 0, 0.3, 0)
     sliderBar.Position = UDim2.new(0.05, 0, 0.6, 0)
-    sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 
     local barCorner = Instance.new("UICorner", sliderBar)
     barCorner.CornerRadius = UDim.new(0, 6)
@@ -171,10 +171,23 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
     -- Slider Handle
     local sliderHandle = Instance.new("Frame", sliderBar)
     sliderHandle.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0) -- Default position
-    sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+    sliderHandle.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
 
     local handleCorner = Instance.new("UICorner", sliderHandle)
-    handleCorner.CornerRadius = UDim.new(0, 6)
+    handleCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Subtle Glow Effect for the Handle
+    local uiGradient = Instance.new("UIGradient", sliderHandle)
+    uiGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 140, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 200, 255))
+    }
+    uiGradient.Rotation = 90
+
+    local uiStroke = Instance.new("UIStroke", sliderHandle)
+    uiStroke.Thickness = 1
+    uiStroke.Color = Color3.fromRGB(140, 200, 255)
+    uiStroke.Transparency = 0.3
 
     -- Dragging Logic
     local userInputService = game:GetService("UserInputService")
@@ -183,12 +196,20 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
     sliderHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
+
+            -- Highlight handle during interaction
+            uiStroke.Transparency = 0.1
+            uiGradient.Rotation = 0 -- Animate gradient during drag
         end
     end)
 
     userInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+
+            -- Restore handle appearance
+            uiStroke.Transparency = 0.3
+            uiGradient.Rotation = 90
         end
     end)
 
@@ -197,7 +218,15 @@ local function createSlider(parent, position, size, min, max, defaultValue, call
             local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
             local percent = x / sliderBar.AbsoluteSize.X
             local value = math.floor(min + percent * (max - min))
-            sliderHandle.Size = UDim2.new(percent, 0, 1, 0)
+
+            sliderHandle:TweenSize(
+                UDim2.new(percent, 0, 1, 0),
+                Enum.EasingDirection.Out,
+                Enum.EasingStyle.Quad,
+                0.1,
+                true
+            ) -- Smoothly adjust the handle size
+
             valueLabel.Text = "Value: " .. tostring(value)
             if callback then
                 callback(value) -- Trigger the callback with the new value
@@ -211,7 +240,7 @@ local homeTab = Instance.new("Frame") -- Replace with the actual tab or parent f
 homeTab.Size = UDim2.new(1, 0, 1, 0)
 homeTab.Parent = script.Parent -- Adjust to the actual UI hierarchy
 
-createSlider(
+createPolishedSlider(
     homeTab, -- Parent
     UDim2.new(0.5, 0, 0.5, 0), -- Position
     UDim2.new(0, 300, 0, 50), -- Size

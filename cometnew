@@ -1112,6 +1112,8 @@ FarmingTab:CreateToggle({
 
 -- START OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
 
+-- Add Kill Aura Features to PlayerTab
+
 -- Variables
 getgenv().KillAuraActive = false
 getgenv().KillAuraRange = 15 -- Default range in studs
@@ -1148,27 +1150,143 @@ function startKillAura()
         while getgenv().KillAuraActive do
             local player = game.Players.LocalPlayer
             local character = player.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
+            local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
                 for _, enemy in pairs(workspace.Enemies:GetChildren()) do
                     if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChildOfClass("Humanoid") then
                         local enemyHRP = enemy.HumanoidRootPart
-                        local distance = (character.HumanoidRootPart.Position - enemyHRP.Position).Magnitude
+                        local distance = (humanoidRootPart.Position - enemyHRP.Position).Magnitude
                         if distance <= getgenv().KillAuraRange then
-                            -- Attack logic here
-                            -- Example: Fire a remote event to attack
-                            game:GetService("ReplicatedStorage").Remotes.Combat:FireServer(enemyHRP)
+                            -- Perform the attack
+                            local combatTool = player.Backpack:FindFirstChildOfClass("Tool") or character:FindFirstChildOfClass("Tool")
+                            if combatTool then
+                                -- Equip the combat tool
+                                character.Humanoid:EquipTool(combatTool)
+                                -- Teleport near the enemy
+                                humanoidRootPart.CFrame = enemyHRP.CFrame * CFrame.new(0, 0, -3)
+                                -- Activate the tool to attack
+                                combatTool:Activate()
+                            end
                         end
                     end
                 end
             end
-            wait(0.1) -- Adjust the delay as needed
+            task.wait(0.1) -- Small delay to prevent excessive loop execution
         end
     end)
 end
 
-
-
 -- END OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
 
--- START OF  ---------------------------------------------------------------------------------------------------------------------------------
+-- START OF AUTO MONEY  ---------------------------------------------------------------------------------------------------------------------------------
+
+-- Auto Chest Collect Toggle for PlayerTab
+
+-- Variables
+getgenv().AutoChestCollect = false
+local MaxSpeed = 300 -- Studs per second
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local UncheckedChests = {}
+local FirstRun = true
+
+-- Helper Functions
+local function getCharacter()
+    if not LocalPlayer.Character then
+        LocalPlayer.CharacterAdded:Wait()
+    end
+    LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+    return LocalPlayer.Character
+end
+
+local function DistanceFromPlrSort(ObjectList)
+    local RootPart = getCharacter().HumanoidRootPart
+    table.sort(ObjectList, function(ChestA, ChestB)
+        local RootPos = RootPart.Position
+        local DistanceA = (RootPos - ChestA.Position).Magnitude
+        local DistanceB = (RootPos - ChestB.Position).Magnitude
+        return DistanceA < DistanceB
+    end)
+end
+
+local function getChestsSorted()
+    if FirstRun then
+        FirstRun = false
+        local Objects = game:GetDescendants()
+        for _, Object in pairs(Objects) do
+            if Object.Name:find("Chest") and Object.ClassName == "Part" then
+                table.insert(UncheckedChests, Object)
+            end
+        end
+    end
+    local Chests = {}
+    for _, Chest in pairs(UncheckedChests) do
+        if Chest:FindFirstChild("TouchInterest") then
+            table.insert(Chests, Chest)
+        end
+    end
+    DistanceFromPlrSort(Chests)
+    return Chests
+end
+
+local function toggleNoclip(Toggle)
+    for _, v in pairs(getCharacter():GetChildren()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not Toggle
+        end
+    end
+end
+
+local function Teleport(Goal, Speed)
+    if not Speed then
+        Speed = MaxSpeed
+    end
+    toggleNoclip(true)
+    local RootPart = getCharacter().HumanoidRootPart
+    local Magnitude = (RootPart.Position - Goal.Position).Magnitude
+
+    while not (Magnitude < 1) and getgenv().AutoChestCollect do
+        local Direction = (Goal.Position - RootPart.Position).unit
+        RootPart.CFrame = RootPart.CFrame + Direction * (Speed * task.wait())
+        Magnitude = (RootPart.Position - Goal.Position).Magnitude
+    end
+    toggleNoclip(false)
+end
+
+local function collectChests()
+    while getgenv().AutoChestCollect do
+        local Chests = getChestsSorted()
+        if #Chests > 0 then
+            Teleport(Chests[1].CFrame)
+        else
+            task.wait(2) -- Wait for chests to respawn or add server-hop logic here
+        end
+        task.wait(0.1) -- Adjust for performance
+    end
+end
+
+-- Auto Chest Collect Toggle (Rayfield)
+PlayerTab:CreateToggle({
+    Name = "Auto Chest Collect",
+    CurrentValue = false,
+    Flag = "Toggle1", -- Ensure unique flag for this toggle
+    Callback = function(Value)
+        getgenv().AutoChestCollect = Value
+        if Value then
+            task.spawn(collectChests)
+        end
+    end
+})
+
+-- Optional Slider to Adjust Speed
+PlayerTab:CreateSlider({
+    Name = "Chest Collection Speed",
+    Range = {100, 500}, -- Speed range (studs per second)
+    Increment = 10,
+    Suffix = " Speed",
+    CurrentValue = MaxSpeed,
+    Flag = "Slider1", -- Ensure unique flag for this slider
+    Callback = function(Value)
+        MaxSpeed = Value
+    end
+})
 

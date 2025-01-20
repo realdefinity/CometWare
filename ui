@@ -258,14 +258,13 @@ createPolishedSlider(
 
 -- END OF SLIDERS ------------------------------------------------------------------------------------------------------------------------------
 
--- Function to Create a High-Quality Toggle
-local function createBlurToggle(parent, position, size, text, defaultValue, callback)
+-- Function to Create a High-Quality Toggle with Subtle Animations
+local function createEnhancedToggle(parent, position, size, text, defaultValue, callback)
     -- Toggle Frame
     local toggleFrame = Instance.new("Frame", parent)
     toggleFrame.Size = size or UDim2.new(0, 300, 0, 40)
     toggleFrame.Position = position or UDim2.new(0.5, -150, 0.2, 0)
     toggleFrame.AnchorPoint = Vector2.new(0.5, 0)
-    toggleFrame.BackgroundTransparency = 0.8
     toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 
     local toggleCorner = Instance.new("UICorner", toggleFrame)
@@ -287,7 +286,6 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     local toggleBackground = Instance.new("Frame", toggleFrame)
     toggleBackground.Size = UDim2.new(0, 50, 0, 20)
     toggleBackground.Position = UDim2.new(0.9, -50, 0.5, -10)
-    toggleBackground.BackgroundTransparency = 0.8
     toggleBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     toggleBackground.BorderSizePixel = 0
 
@@ -298,8 +296,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     local toggleHandle = Instance.new("Frame", toggleBackground)
     toggleHandle.Size = UDim2.new(0, 18, 1, 0)
     toggleHandle.Position = defaultValue and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
-    toggleHandle.BackgroundTransparency = 0.8
-    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Adjusted color for less brightness
+    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
     toggleHandle.BorderSizePixel = 0
 
     local handleCorner = Instance.new("UICorner", toggleHandle)
@@ -308,8 +305,8 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     -- Add Blur Animation Frame
     local blurFrame = Instance.new("Frame", toggleBackground)
     blurFrame.Size = UDim2.new(1, 0, 1, 0)
-    blurFrame.BackgroundTransparency = 0.8
-    blurFrame.BackgroundColor3 = Color3.fromRGB(100, 150, 200) -- Adjusted color for less brightness
+    blurFrame.BackgroundTransparency = 1 -- Start fully transparent
+    blurFrame.BackgroundColor3 = Color3.fromRGB(120, 180, 250)
     blurFrame.Visible = false -- Start hidden
 
     local blurCorner = Instance.new("UICorner", blurFrame)
@@ -318,7 +315,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     -- State Indicator
     local isToggled = defaultValue or false
     if isToggled then
-        toggleBackground.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Adjusted color for less brightness
+        toggleBackground.BackgroundColor3 = Color3.fromRGB(80, 160, 240) -- Subtle brightness increase
         blurFrame.Visible = true
     end
 
@@ -328,7 +325,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
 
         -- Animate Handle Movement
         local targetPosition = isToggled and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
-        local targetColor = isToggled and Color3.fromRGB(70, 120, 200) or Color3.fromRGB(60, 60, 60)
+        local targetColor = isToggled and Color3.fromRGB(80, 160, 240) or Color3.fromRGB(60, 60, 60)
 
         toggleHandle:TweenPosition(
             targetPosition,
@@ -338,13 +335,30 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
             true
         )
 
-        -- Blur Animation
+        -- Subtle Bounce Effect for Handle
+        toggleHandle:TweenSize(
+            UDim2.new(0, 20, 1.1, 0), -- Slightly enlarge during movement
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Back,
+            0.2,
+            true
+        )
+        task.wait(0.2)
+        toggleHandle:TweenSize(
+            UDim2.new(0, 18, 1, 0), -- Restore original size
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Quad,
+            0.1,
+            true
+        )
+
+        -- Blur Animation (Fade In/Out)
         blurFrame.Visible = true
-        blurFrame.BackgroundTransparency = isToggled and 0.4 or 0.8
+        blurFrame.BackgroundTransparency = isToggled and 0.6 or 1
         game:GetService("TweenService"):Create(
             blurFrame,
             TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundTransparency = isToggled and 0 or 1}
+            {BackgroundTransparency = isToggled and 0.6 or 1}
         ):Play()
 
         -- Background Color Animation
@@ -369,7 +383,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
 end
 
 -- Example Toggle
-createBlurToggle(
+createEnhancedToggle(
     contentFrame, -- Parent (from the base UI)
     UDim2.new(0.5, 0, 0.3, 0), -- Position
     UDim2.new(0, 300, 0, 40), -- Size
@@ -379,3 +393,4 @@ createBlurToggle(
         print("Toggle state is now:", state)
     end
 )
+

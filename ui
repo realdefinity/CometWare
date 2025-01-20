@@ -137,8 +137,14 @@ homeLabel.Font = Enum.Font.GothamBold
 homeLabel.BackgroundTransparency = 1
 
 -- Add additional features below this line with ease
--- Function to Create a High-Quality Animated Slider
+-- Function to Create an Animated Slider
 local function createCometSlider(parent, position, size, min, max, defaultValue, callback)
+    -- Ensure Parent Exists
+    if not parent then
+        warn("[Comet UI] Parent frame not provided for slider!")
+        return
+    end
+
     -- Slider Frame
     local sliderFrame = Instance.new("Frame", parent)
     sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
@@ -158,7 +164,7 @@ local function createCometSlider(parent, position, size, min, max, defaultValue,
     valueLabel.Text = "Value: " .. tostring(defaultValue)
     valueLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     valueLabel.TextScaled = true
-    valueLabel.Font = Enum.Font.Roboto -- Updated to Roboto
+    valueLabel.Font = Enum.Font.Roboto
 
     -- Slider Bar
     local sliderBar = Instance.new("Frame", sliderFrame)
@@ -241,26 +247,27 @@ local function createCometSlider(parent, position, size, min, max, defaultValue,
 end
 
 -- Example Usage
-local cometUI = game:GetService("CoreGui"):FindFirstChild("Comet") -- Connect to your Comet UI
+local cometUI = game:GetService("CoreGui"):FindFirstChild("Comet") -- Ensure this matches your UI name
 if not cometUI then
-    error("Comet UI not found. Please ensure it is loaded.")
-end
-
-local homeTab = cometUI:FindFirstChild("HomeTab") -- Replace with the correct tab/frame name
-if not homeTab then
-    error("HomeTab not found in Comet UI.")
-end
-
-createCometSlider(
-    homeTab, -- Parent
-    UDim2.new(0.5, 0, 0.6, 0), -- Position
-    UDim2.new(0, 300, 0, 60), -- Size
-    0, -- Min value
-    100, -- Max value
-    50, -- Default value
-    function(value) -- Callback
-        print("Slider value changed to:", value)
+    warn("Comet UI not found in CoreGui!")
+else
+    -- Check if homeTab exists
+    local homeTab = cometUI:FindFirstChild("homeTab") -- Fixed to match the lowercase name
+    if not homeTab then
+        warn("homeTab not found in Comet UI!")
+    else
+        -- Add slider to homeTab
+        createCometSlider(
+            homeTab, -- Parent
+            UDim2.new(0.5, 0, 0.6, 0), -- Position
+            UDim2.new(0, 300, 0, 60), -- Size
+            0, -- Min value
+            100, -- Max value
+            50, -- Default value
+            function(value) -- Callback
+                print("Slider value changed to:", value)
+            end
+        )
     end
-)
-
+end
 

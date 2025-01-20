@@ -299,7 +299,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     toggleHandle.Size = UDim2.new(0, 18, 1, 0)
     toggleHandle.Position = defaultValue and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
     toggleHandle.BackgroundTransparency = 0.8
-    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Adjusted color for less brightness
     toggleHandle.BorderSizePixel = 0
 
     local handleCorner = Instance.new("UICorner", toggleHandle)
@@ -309,7 +309,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     local blurFrame = Instance.new("Frame", toggleBackground)
     blurFrame.Size = UDim2.new(1, 0, 1, 0)
     blurFrame.BackgroundTransparency = 0.8
-    blurFrame.BackgroundColor3 = Color3.fromRGB(120, 180, 250)
+    blurFrame.BackgroundColor3 = Color3.fromRGB(100, 150, 200) -- Adjusted color for less brightness
     blurFrame.Visible = false -- Start hidden
 
     local blurCorner = Instance.new("UICorner", blurFrame)
@@ -318,7 +318,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     -- State Indicator
     local isToggled = defaultValue or false
     if isToggled then
-        toggleBackground.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
+        toggleBackground.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Adjusted color for less brightness
         blurFrame.Visible = true
     end
 
@@ -328,7 +328,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
 
         -- Animate Handle Movement
         local targetPosition = isToggled and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
-        local targetColor = isToggled and Color3.fromRGB(80, 170, 255) or Color3.fromRGB(60, 60, 60)
+        local targetColor = isToggled and Color3.fromRGB(70, 120, 200) or Color3.fromRGB(60, 60, 60)
 
         toggleHandle:TweenPosition(
             targetPosition,

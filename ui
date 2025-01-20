@@ -137,14 +137,8 @@ homeLabel.Font = Enum.Font.GothamBold
 homeLabel.BackgroundTransparency = 1
 
 -- Add additional features below this line with ease
--- Function to Create an Animated and Polished Slider
-local function createAnimatedSlider(parent, position, size, min, max, defaultValue, callback)
-    -- Ensure Parent Exists
-    if not parent then
-        error("Parent frame not provided for slider!")
-        return
-    end
-
+-- Function to Create a High-Quality Animated Slider
+local function createCometSlider(parent, position, size, min, max, defaultValue, callback)
     -- Slider Frame
     local sliderFrame = Instance.new("Frame", parent)
     sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
@@ -154,16 +148,7 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     sliderFrame.ClipsDescendants = true
 
     local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0, 10)
-
-    -- Shadow Effect
-    local shadow = Instance.new("ImageLabel", sliderFrame)
-    shadow.Size = UDim2.new(1.2, 0, 1.5, 0)
-    shadow.Position = UDim2.new(-0.1, 0, -0.25, 0)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.6
+    sliderCorner.CornerRadius = UDim.new(0, 12)
 
     -- Value Label
     local valueLabel = Instance.new("TextLabel", sliderFrame)
@@ -173,7 +158,7 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     valueLabel.Text = "Value: " .. tostring(defaultValue)
     valueLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     valueLabel.TextScaled = true
-    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.Font = Enum.Font.Roboto -- Updated to Roboto
 
     -- Slider Bar
     local sliderBar = Instance.new("Frame", sliderFrame)
@@ -192,9 +177,9 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     local handleCorner = Instance.new("UICorner", sliderHandle)
     handleCorner.CornerRadius = UDim.new(0, 10)
 
-    -- Handle Glow Animation
-    local handleGlow = Instance.new("UIGradient", sliderHandle)
-    handleGlow.Color = ColorSequence.new{
+    -- Glow Effect
+    local uiGradient = Instance.new("UIGradient", sliderHandle)
+    uiGradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 180, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 220, 255))
     }
@@ -206,33 +191,25 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     sliderHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-
-            -- Enlarge Handle and Add Glow During Drag
+            -- Animate handle enlargement
             sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.1, 0), -- Slightly enlarge handle
+                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.2, 0),
                 Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
+                Enum.EasingStyle.Back,
                 0.2,
                 true
             )
-
-            -- Pulse Glow Animation
-            while dragging do
-                handleGlow.Offset = Vector2.new(handleGlow.Offset.X + 0.05, 0)
-                task.wait(0.05)
-            end
         end
     end)
 
     userInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-
-            -- Restore Handle Size After Drag
+            -- Restore handle size
             sliderHandle:TweenSize(
                 UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0),
                 Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
+                Enum.EasingStyle.Back,
                 0.2,
                 true
             )
@@ -245,36 +222,36 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
             local percent = x / sliderBar.AbsoluteSize.X
             local value = math.floor(min + percent * (max - min))
 
-            -- Smoothly Update Handle Position
+            -- Animate handle position
             sliderHandle:TweenSize(
-                UDim2.new(percent, 0, 1.1, 0), -- Handle moves with animation
+                UDim2.new(percent, 0, 1.2, 0),
                 Enum.EasingDirection.Out,
                 Enum.EasingStyle.Quad,
                 0.05,
                 true
             )
 
-            -- Update Value Label
+            -- Update label
             valueLabel.Text = "Value: " .. tostring(value)
             if callback then
-                callback(value) -- Trigger the callback
+                callback(value) -- Trigger callback
             end
         end
     end)
 end
 
 -- Example Usage
-local screenGui = Instance.new("ScreenGui", game.CoreGui)
-local homeTab = Instance.new("Frame", screenGui) -- Replace this with the actual parent frame in your UI
-homeTab.Size = UDim2.new(0, 400, 0, 300)
-homeTab.Position = UDim2.new(0.5, -200, 0.5, -150)
-homeTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-homeTab.AnchorPoint = Vector2.new(0.5, 0.5)
+local cometUI = game:GetService("CoreGui"):FindFirstChild("Comet") -- Connect to your Comet UI
+if not cometUI then
+    error("Comet UI not found. Please ensure it is loaded.")
+end
 
-local corner = Instance.new("UICorner", homeTab)
-corner.CornerRadius = UDim.new(0, 10)
+local homeTab = cometUI:FindFirstChild("HomeTab") -- Replace with the correct tab/frame name
+if not homeTab then
+    error("HomeTab not found in Comet UI.")
+end
 
-createAnimatedSlider(
+createCometSlider(
     homeTab, -- Parent
     UDim2.new(0.5, 0, 0.6, 0), -- Position
     UDim2.new(0, 300, 0, 60), -- Size
@@ -285,4 +262,5 @@ createAnimatedSlider(
         print("Slider value changed to:", value)
     end
 )
+
 

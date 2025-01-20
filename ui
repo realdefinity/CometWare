@@ -265,6 +265,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     toggleFrame.Size = size or UDim2.new(0, 300, 0, 40)
     toggleFrame.Position = position or UDim2.new(0.5, -150, 0.2, 0)
     toggleFrame.AnchorPoint = Vector2.new(0.5, 0)
+    toggleFrame.BackgroundTransparency = 0.8
     toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 
     local toggleCorner = Instance.new("UICorner", toggleFrame)
@@ -286,6 +287,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     local toggleBackground = Instance.new("Frame", toggleFrame)
     toggleBackground.Size = UDim2.new(0, 50, 0, 20)
     toggleBackground.Position = UDim2.new(0.9, -50, 0.5, -10)
+    toggleBackground.BackgroundTransparency = 0.8
     toggleBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     toggleBackground.BorderSizePixel = 0
 
@@ -296,6 +298,7 @@ local function createBlurToggle(parent, position, size, text, defaultValue, call
     local toggleHandle = Instance.new("Frame", toggleBackground)
     toggleHandle.Size = UDim2.new(0, 18, 1, 0)
     toggleHandle.Position = defaultValue and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
+    toggleHandle.BackgroundTransparency = 0.8
     toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
     toggleHandle.BorderSizePixel = 0
 

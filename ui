@@ -1,39 +1,90 @@
 -- Ensure Only One Instance of the UI
-if game.CoreGui:FindFirstChild("Comet") then
-    game.CoreGui.Comet:Destroy()
+if game.CoreGui:FindFirstChild("CometUI") then
+    game.CoreGui.CometUI:Destroy()
 end
 
--- ScreenGui and Main Frame
-local screenGui = Instance.new("ScreenGui", game.CoreGui)
-screenGui.Name = "Comet"
+-- Create the ScreenGui (UI Container)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CometUI"
+screenGui.Parent = game.CoreGui
+screenGui.IgnoreGuiInset = true -- Ignore the top bar offset
 
-local mainFrame = Instance.new("Frame", screenGui)
+-- Create the Main Frame (UI Window)
+local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 400, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.Parent = screenGui
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
 
-local uiCorner = Instance.new("UICorner", mainFrame)
+-- Add Rounded Corners to the Main Frame
+local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
 
--- UI Movement
-local dragging, dragInput, dragStart, startPos
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Parent = mainFrame
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+titleBar.BorderSizePixel = 0
 
-mainFrame.InputBegan:Connect(function(input)
+-- Title Text
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Parent = titleBar
+titleText.Size = UDim2.new(1, 0, 1, 0)
+titleText.Position = UDim2.new(0, 0, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "Comet UI"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.TextStrokeTransparency = 0.9
+titleText.Position = UDim2.new(0.02, 0, 0, 0)
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Parent = titleBar
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -30, 0, 0)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 14
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 5)
+closeCorner.Parent = closeButton
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy() -- Destroy the UI when the close button is clicked
+end)
+
+-- Placeholder for Content
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Parent = mainFrame
+contentFrame.Size = UDim2.new(1, 0, 1, -30)
+contentFrame.Position = UDim2.new(0, 0, 0, 30)
+contentFrame.BackgroundTransparency = 1
+
+-- Dragging Logic for the Main Frame
+local dragging = false
+local dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
+
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -42,7 +93,7 @@ mainFrame.InputBegan:Connect(function(input)
     end
 end)
 
-mainFrame.InputChanged:Connect(function(input)
+titleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
@@ -50,224 +101,7 @@ end)
 
 game:GetService("UserInputService").InputChanged:Connect(function(input)
     if input == dragInput and dragging then
-        updateDrag(input)
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-
--- Title Bar
-local titleBar = Instance.new("Frame", mainFrame)
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-
-local titleText = Instance.new("TextLabel", titleBar)
-titleText.Text = "Comet"
-titleText.Size = UDim2.new(1, -40, 1, 0)
-titleText.Position = UDim2.new(0, 10, 0, 0)
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextScaled = true
-titleText.Font = Enum.Font.GothamBold
-titleText.BackgroundTransparency = 1
-
-local closeButton = Instance.new("TextButton", titleBar)
-closeButton.Text = "X"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0.5, -15)
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-closeButton.TextScaled = true
-closeButton.Font = Enum.Font.GothamBold
-
-local closeCorner = Instance.new("UICorner", closeButton)
-closeCorner.CornerRadius = UDim.new(0, 10)
-
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-end)
-
--- Tabs
-local tabsFrame = Instance.new("Frame", mainFrame)
-tabsFrame.Size = UDim2.new(1, 0, 0, 40)
-tabsFrame.Position = UDim2.new(0, 0, 0, 40)
-tabsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-
-local tabContainer = Instance.new("Frame", mainFrame)
-tabContainer.Size = UDim2.new(1, 0, 1, -80)
-tabContainer.Position = UDim2.new(0, 0, 0, 80)
-tabContainer.BackgroundTransparency = 1
-
-local currentTab = nil
-
-local function createTab(name)
-    local tabButton = Instance.new("TextButton", tabsFrame)
-    tabButton.Text = name
-    tabButton.Size = UDim2.new(0, 120, 1, 0)
-    tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    tabButton.Font = Enum.Font.Gotham
-    tabButton.TextScaled = true
-
-    local corner = Instance.new("UICorner", tabButton)
-    corner.CornerRadius = UDim.new(0, 8)
-
-    local tabFrame = Instance.new("Frame", tabContainer)
-    tabFrame.Size = UDim2.new(1, 0, 1, 0)
-    tabFrame.BackgroundTransparency = 1
-    tabFrame.Visible = false
-
-    tabButton.MouseButton1Click:Connect(function()
-        if currentTab then
-            currentTab.Visible = false
-        end
-        tabFrame.Visible = true
-        currentTab = tabFrame
-    end)
-
-    return tabFrame
-end
-
--- Home Tab
-local homeTab = createTab("Home")
-local homeLabel = Instance.new("TextLabel", homeTab)
-homeLabel.Text = "Comet ;)"
-homeLabel.Size = UDim2.new(1, 0, 0, 50)
-homeLabel.Position = UDim2.new(0, 0, 0, 10)
-homeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-homeLabel.TextScaled = true
-homeLabel.Font = Enum.Font.GothamBold
-homeLabel.BackgroundTransparency = 1
-
--- Add additional features below this line with ease
--- Function to Create an Animated Slider
-local function createCometSlider(parent, position, size, min, max, defaultValue, callback)
-    -- Ensure Parent Exists
-    if not parent then
-        warn("[Comet UI] Parent frame not provided for slider!")
-        return
-    end
-
-    -- Slider Frame
-    local sliderFrame = Instance.new("Frame", parent)
-    sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
-    sliderFrame.Position = position or UDim2.new(0.5, -150, 0.5, -30)
-    sliderFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    sliderFrame.ClipsDescendants = true
-
-    local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0, 12)
-
-    -- Value Label
-    local valueLabel = Instance.new("TextLabel", sliderFrame)
-    valueLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    valueLabel.Position = UDim2.new(0, 0, 0, 0)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.Text = "Value: " .. tostring(defaultValue)
-    valueLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    valueLabel.TextScaled = true
-    valueLabel.Font = Enum.Font.Roboto
-
-    -- Slider Bar
-    local sliderBar = Instance.new("Frame", sliderFrame)
-    sliderBar.Size = UDim2.new(0.9, 0, 0.3, 0)
-    sliderBar.Position = UDim2.new(0.05, 0, 0.6, 0)
-    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-
-    local barCorner = Instance.new("UICorner", sliderBar)
-    barCorner.CornerRadius = UDim.new(0, 10)
-
-    -- Slider Handle
-    local sliderHandle = Instance.new("Frame", sliderBar)
-    sliderHandle.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
-    sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
-
-    local handleCorner = Instance.new("UICorner", sliderHandle)
-    handleCorner.CornerRadius = UDim.new(0, 10)
-
-    -- Glow Effect
-    local uiGradient = Instance.new("UIGradient", sliderHandle)
-    uiGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 180, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 220, 255))
-    }
-
-    -- Dragging Logic
-    local userInputService = game:GetService("UserInputService")
-    local dragging = false
-
-    sliderHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            -- Animate handle enlargement
-            sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.2, 0),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Back,
-                0.2,
-                true
-            )
-        end
-    end)
-
-    userInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-            -- Restore handle size
-            sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Back,
-                0.2,
-                true
-            )
-        end
-    end)
-
-    userInputService.InputChanged:Connect(function(mouseInput)
-        if dragging and mouseInput.UserInputType == Enum.UserInputType.MouseMovement then
-            local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
-            local percent = x / sliderBar.AbsoluteSize.X
-            local value = math.floor(min + percent * (max - min))
-
-            -- Animate handle position
-            sliderHandle:TweenSize(
-                UDim2.new(percent, 0, 1.2, 0),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
-                0.05,
-                true
-            )
-
-            -- Update label
-            valueLabel.Text = "Value: " .. tostring(value)
-            if callback then
-                callback(value) -- Trigger callback
-            end
-        end
-    end)
-end
-
--- Example Usage
-local cometUI = game:GetService("CoreGui"):FindFirstChild("Comet") -- Ensure this matches your UI name
-if not cometUI then
-    warn("Comet UI not found in CoreGui!")
-else
-    -- Check if homeTab exists
-    local homeTab = cometUI:FindFirstChild("homeTab") -- Fixed to match the lowercase name
-    if not homeTab then
-        warn("homeTab not found in Comet UI!")
-    else
-        -- Add slider to homeTab
-        createCometSlider(
-            homeTab, -- Parent
-            UDim2.new(0.5, 0, 0.6, 0), -- Position
-            UDim2.new(0, 300, 0, 60), -- Size
-            0, -- Min value
-            100, -- Max value
-            50, -- Default value
-            function(value) -- Callback
-                print("Slider value changed to:", value)
-            end
-        )
-    end
-end
-

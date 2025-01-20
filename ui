@@ -106,8 +106,8 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     end
 end)
 
--- Function to Create an Animated Slider
-local function createAnimatedSlider(parent, position, size, min, max, defaultValue, callback)
+-- SLIDERS ------------------------------------------------------------------------------------------------------------------------------------
+local function createEnhancedSlider(parent, position, size, min, max, defaultValue, callback)
     -- Slider Container
     local sliderFrame = Instance.new("Frame", parent)
     sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
@@ -143,35 +143,58 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
 
     -- Slider Handle
     local sliderHandle = Instance.new("Frame", sliderBar)
-    sliderHandle.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
+    sliderHandle.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1.2, 0)
     sliderHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
 
     local handleCorner = Instance.new("UICorner", sliderHandle)
     handleCorner.CornerRadius = UDim.new(0, 10)
     handleCorner.Parent = sliderHandle
 
-    -- Glow Effect
+    -- Expand the Clickable Area (Invisible Hitbox)
+    local sliderHitbox = Instance.new("Frame", sliderBar)
+    sliderHitbox.Size = UDim2.new(1, 0, 1.5, 0) -- Larger than the handle
+    sliderHitbox.BackgroundTransparency = 1
+
+    -- Glow Effect for Handle
     local glow = Instance.new("UIGradient", sliderHandle)
     glow.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 140, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 220, 255))
     }
 
+    -- Drop Shadow for Handle
+    local shadow = Instance.new("ImageLabel", sliderHandle)
+    shadow.Size = UDim2.new(1.2, 0, 1.5, 0)
+    shadow.Position = UDim2.new(-0.1, 0, -0.25, 0)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.6
+
     -- Dragging Logic
     local userInputService = game:GetService("UserInputService")
     local dragging = false
 
-    sliderHandle.InputBegan:Connect(function(input)
+    sliderHitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             -- Animate handle enlargement
             sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.2, 0),
+                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.3, 0), -- Enlarges slightly
                 Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
+                Enum.EasingStyle.Back,
                 0.2,
                 true
             )
+
+            -- Pulsating Glow
+            glow.Offset = Vector2.new(0, 0)
+            task.spawn(function()
+                while dragging do
+                    glow.Offset = glow.Offset + Vector2.new(0.02, 0)
+                    task.wait(0.03)
+                end
+            end)
         end
     end)
 
@@ -180,9 +203,9 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
             dragging = false
             -- Restore handle size
             sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0),
+                UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0), -- Restore to normal size
                 Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
+                Enum.EasingStyle.Back,
                 0.2,
                 true
             )
@@ -197,7 +220,7 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
 
             -- Animate handle position
             sliderHandle:TweenSize(
-                UDim2.new(percent, 0, 1.2, 0),
+                UDim2.new(percent, 0, 1.3, 0), -- Handle moves and animates
                 Enum.EasingDirection.Out,
                 Enum.EasingStyle.Quad,
                 0.05,
@@ -213,9 +236,9 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     end)
 end
 
--- Add a Slider to the UI
-createAnimatedSlider(
-    contentFrame, -- Parent (defined in the base UI)
+-- Add the Enhanced Slider to the UI
+createEnhancedSlider(
+    contentFrame, -- Parent (from the base UI)
     UDim2.new(0.5, 0, 0.1, 0), -- Position
     UDim2.new(0, 300, 0, 60), -- Size
     0, -- Min value
@@ -225,4 +248,6 @@ createAnimatedSlider(
         print("Slider value changed to:", value)
     end
 )
+
+-- END OF SLIDERS ------------------------------------------------------------------------------------------------------------------------------
 

@@ -1113,115 +1113,60 @@ FarmingTab:CreateToggle({
 -- START OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
 
 -- Variables
-local killAuraActive = false
-local attackRange = 15 -- Default range in studs
+getgenv().KillAuraActive = false
+getgenv().KillAuraRange = 15 -- Default range in studs
 
--- Create the Range Slider
-local function createRangeSlider(parent)
-    local sliderLabel = Instance.new("TextLabel", parent)
-    sliderLabel.Size = UDim2.new(0, 200, 0, 40)
-    sliderLabel.Position = UDim2.new(0, 10, 0, 10)
-    sliderLabel.Text = "Kill Aura Range: " .. tostring(attackRange)
-    sliderLabel.TextColor3 = Color3.new(1, 1, 1)
-    sliderLabel.BackgroundTransparency = 1
-    sliderLabel.TextScaled = true
-    sliderLabel.Font = Enum.Font.GothamBold
-
-    local slider = Instance.new("Frame", parent)
-    slider.Size = UDim2.new(0, 300, 0, 40)
-    slider.Position = UDim2.new(0, 10, 0, 50)
-    slider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-
-    local sliderFill = Instance.new("Frame", slider)
-    sliderFill.Size = UDim2.new(attackRange / 100, 0, 1, 0)
-    sliderFill.BackgroundColor3 = Color3.new(0.4, 0.8, 1)
-
-    slider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            game:GetService("UserInputService").InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local relativeX = math.clamp(input.Position.X - slider.AbsolutePosition.X, 0, slider.AbsoluteSize.X)
-                    local percent = relativeX / slider.AbsoluteSize.X
-                    attackRange = math.floor(percent * 100)
-                    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-                    sliderLabel.Text = "Kill Aura Range: " .. tostring(attackRange)
-                end
-            end)
-        end
-    end)
-end
-
--- Function to Find Enemies
-local function findEnemiesInRange(range)
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if not character then return {} end
-
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return {} end
-
-    local enemies = {}
-    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
-            if enemyRoot then
-                local distance = (enemyRoot.Position - humanoidRootPart.Position).Magnitude
-                if distance <= range then
-                    table.insert(enemies, enemy)
-                end
-            end
-        end
-    end
-    return enemies
-end
-
--- Function to Attack Enemies
-local function attackEnemy(enemy)
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-    local combatTool = player.Backpack:FindFirstChildOfClass("Tool") or character:FindFirstChildOfClass("Tool")
-
-    if humanoidRootPart and combatTool and enemy:FindFirstChild("HumanoidRootPart") then
-        -- Teleport player close to the enemy
-        humanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-
-        -- Equip the tool and attack
-        character.Humanoid:EquipTool(combatTool)
-        combatTool:Activate()
-    end
-end
-
--- Kill Aura Logic
-local function killAura()
-    while killAuraActive do
-        local enemies = findEnemiesInRange(attackRange)
-        for _, enemy in pairs(enemies) do
-            if not killAuraActive then break end
-            attackEnemy(enemy)
-            task.wait(0.3) -- Delay between attacks
-        end
-        task.wait(0.1)
-    end
-end
-
--- UI Integration (Toggle)
-local FarmingTab = Window:CreateTab("Farming", 4483362458) -- Farming Tab
-FarmingTab:CreateToggle({
+-- Kill Aura Toggle
+PlayerTab:CreateToggle({
     Name = "Kill Aura",
     CurrentValue = false,
-    Flag = "Toggle_KillAura",
-    Callback = function(value)
-        killAuraActive = value
-        if killAuraActive then
-            task.spawn(killAura)
+    Flag = "KillAuraToggle",
+    Callback = function(Value)
+        getgenv().KillAuraActive = Value
+        if Value then
+            startKillAura()
         end
     end
 })
 
--- Add the Range Slider to the UI
-local FarmingTabContent = FarmingTab:CreateSection("Kill Aura Settings")
-createRangeSlider(FarmingTabContent)
+-- Kill Aura Range Slider
+PlayerTab:CreateSlider({
+    Name = "Kill Aura Range",
+    Range = {5, 50}, -- Min and Max range in studs
+    Increment = 1,
+    Suffix = " Studs",
+    CurrentValue = getgenv().KillAuraRange,
+    Flag = "KillAuraRange",
+    Callback = function(Value)
+        getgenv().KillAuraRange = Value
+    end
+})
+
+-- Function to Start Kill Aura
+function startKillAura()
+    spawn(function()
+        while getgenv().KillAuraActive do
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+                    if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChildOfClass("Humanoid") then
+                        local enemyHRP = enemy.HumanoidRootPart
+                        local distance = (character.HumanoidRootPart.Position - enemyHRP.Position).Magnitude
+                        if distance <= getgenv().KillAuraRange then
+                            -- Attack logic here
+                            -- Example: Fire a remote event to attack
+                            game:GetService("ReplicatedStorage").Remotes.Combat:FireServer(enemyHRP)
+                        end
+                    end
+                end
+            end
+            wait(0.1) -- Adjust the delay as needed
+        end
+    end)
+end
+
+
 
 -- END OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
 

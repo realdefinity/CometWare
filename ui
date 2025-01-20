@@ -258,8 +258,8 @@ createPolishedSlider(
 
 -- END OF SLIDERS ------------------------------------------------------------------------------------------------------------------------------
 
--- Function to Create a Super Polished Toggle
-local function createSmoothToggle(parent, position, size, text, defaultValue, callback)
+-- Function to Create a High-Quality Toggle
+local function createBlurToggle(parent, position, size, text, defaultValue, callback)
     -- Toggle Frame
     local toggleFrame = Instance.new("Frame", parent)
     toggleFrame.Size = size or UDim2.new(0, 300, 0, 40)
@@ -302,26 +302,21 @@ local function createSmoothToggle(parent, position, size, text, defaultValue, ca
     local handleCorner = Instance.new("UICorner", toggleHandle)
     handleCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Glow Effect
-    local uiGradient = Instance.new("UIGradient", toggleHandle)
-    uiGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 180, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 230, 255))
-    }
+    -- Add Blur Animation Frame
+    local blurFrame = Instance.new("Frame", toggleBackground)
+    blurFrame.Size = UDim2.new(1, 0, 1, 0)
+    blurFrame.BackgroundTransparency = 0.8
+    blurFrame.BackgroundColor3 = Color3.fromRGB(120, 180, 250)
+    blurFrame.Visible = false -- Start hidden
 
-    -- Subtle Drop Shadow for Handle
-    local shadow = Instance.new("ImageLabel", toggleHandle)
-    shadow.Size = UDim2.new(1.5, 0, 1.5, 0)
-    shadow.Position = UDim2.new(-0.25, 0, -0.25, 0)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.6
+    local blurCorner = Instance.new("UICorner", blurFrame)
+    blurCorner.CornerRadius = UDim.new(1, 0)
 
     -- State Indicator
     local isToggled = defaultValue or false
     if isToggled then
         toggleBackground.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
+        blurFrame.Visible = true
     end
 
     -- Smooth Toggle Function
@@ -336,31 +331,23 @@ local function createSmoothToggle(parent, position, size, text, defaultValue, ca
             targetPosition,
             Enum.EasingDirection.Out,
             Enum.EasingStyle.Quad,
-            0.2,
+            0.3,
             true
         )
 
-        -- Bounce Animation (Subtle Effect)
-        toggleHandle:TweenSize(
-            UDim2.new(0, 20, 1.1, 0), -- Slightly enlarge during movement
-            Enum.EasingDirection.Out,
-            Enum.EasingStyle.Back,
-            0.2,
-            true
-        )
-        task.wait(0.2)
-        toggleHandle:TweenSize(
-            UDim2.new(0, 18, 1, 0), -- Restore original size
-            Enum.EasingDirection.Out,
-            Enum.EasingStyle.Quad,
-            0.1,
-            true
-        )
+        -- Blur Animation
+        blurFrame.Visible = true
+        blurFrame.BackgroundTransparency = isToggled and 0.4 or 0.8
+        game:GetService("TweenService"):Create(
+            blurFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = isToggled and 0 or 1}
+        ):Play()
 
         -- Background Color Animation
         game:GetService("TweenService"):Create(
             toggleBackground,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             {BackgroundColor3 = targetColor}
         ):Play()
 
@@ -379,7 +366,7 @@ local function createSmoothToggle(parent, position, size, text, defaultValue, ca
 end
 
 -- Example Toggle
-createSmoothToggle(
+createBlurToggle(
     contentFrame, -- Parent (from the base UI)
     UDim2.new(0.5, 0, 0.3, 0), -- Position
     UDim2.new(0, 300, 0, 40), -- Size
@@ -389,4 +376,3 @@ createSmoothToggle(
         print("Toggle state is now:", state)
     end
 )
-

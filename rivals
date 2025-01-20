@@ -2,126 +2,50 @@
 
 -- Load Rayfield Library (Assuming it's already loaded)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
--- Variables
-getgenv().AntiCheatBypassActive = false
-getgenv().PreventKickActive = false
-
--- Prevent Unauthorized Kick Calls
-local function preventKick()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-
-    local oldNamecall = mt.__namecall
-    mt.__namecall = function(self, ...)
-        local method = getnamecallmethod()
-        if tostring(method) == "Kick" then
-            return warn("Blocked a kick attempt!")
-        end
-        return oldNamecall(self, ...)
+-- Improved Metatable override for kick prevention
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = function(self, ...)
+    local method = getnamecallmethod()
+    if method == "Kick" then
+        return warn("Kick attempt blocked!")  -- Inform the user in the output that a kick was attempted and blocked.
     end
-
-    setreadonly(mt, true)
+    return oldNamecall(self, ...)
 end
+setreadonly(mt, true)
 
--- Disable Anti-Cheat Detection Scripts
+-- Enhanced Anti-Cheat Detection Disabling
 local function disableAntiCheatScripts()
     for _, v in pairs(getgc(true)) do
         if type(v) == "function" and islclosure(v) then
             local scriptEnv = getfenv(v)
             if scriptEnv.script and scriptEnv.script.Name:lower():find("anti") then
-                hookfunction(v, function(...)
-                    return nil -- Block anti-cheat functions from executing
-                end)
+                hookfunction(v, function(...) return nil end)  -- Disable the function by overriding it with a no-operation function.
+                warn("Anti-cheat script detected and disabled.")
             end
         end
     end
 end
+disableAntiCheatScripts()  -- Call this function on script load to disable any existing anti-cheat scripts
 
--- Patch Physics Checks (Noclip and Speed)
-local function patchPhysics()
-    local RunService = game:GetService("RunService")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local Humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-
-    if Humanoid then
-        RunService.Stepped:Connect(function()
-            pcall(function()
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
-            end)
-        end)
-    end
-end
-
--- Prevent Ownership Detection
-local function preventOwnershipChecks()
-    local RunService = game:GetService("RunService")
-    local LocalPlayer = game.Players.LocalPlayer
-
-    RunService.Heartbeat:Connect(function()
-        if sethiddenproperty then
-            pcall(function()
-                sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) -- Maximizing radius
-            end)
-        end
-    end)
-end
-
--- Anti-Cheat Bypass Logic
-local function toggleAntiCheatBypass(toggle)
-    if toggle then
-        preventKick()
-        disableAntiCheatScripts()
-        patchPhysics()
-        preventOwnershipChecks()
-        warn("Anti-Cheat Bypass Enabled!")
-    else
-        warn("Anti-Cheat Bypass Disabled!") -- No active removal, restart the game to reset.
-    end
-end
-
--- UI Integration
-local Window = Rayfield:CreateWindow({
-    Name = "Rivals Exploit",
-    LoadingTitle = "Loading Rivals Exploit",
-    LoadingSubtitle = "By YourName",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "RivalsConfigs",
-        FileName = "RivalsAntiCheatConfig"
-    }
-})
-
--- PlayerTab
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-
--- Anti-Cheat Bypass Toggle
-PlayerTab:CreateToggle({
-    Name = "Enable Anti-Cheat Bypass",
-    CurrentValue = false,
-    Flag = "Toggle1",
-    Callback = function(Value)
-        getgenv().AntiCheatBypassActive = Value
-        toggleAntiCheatBypass(Value)
+-- Ensure physics states do not trigger anti-cheat mechanisms
+RunService.Stepped:Connect(function()
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
     end
 })
 
--- Prevent Kick Toggle
-PlayerTab:CreateToggle({
-    Name = "Prevent Kick",
-    CurrentValue = false,
-    Flag = "Toggle2",
-    Callback = function(Value)
-        getgenv().PreventKickActive = Value
-        if Value then
-            preventKick()
-        end
-    end
-})
+-- The script functions silently and persistently in the background
+-- There are no UI elements or toggles for the user to interact with.

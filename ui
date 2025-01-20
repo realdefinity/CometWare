@@ -60,7 +60,7 @@ titleBar.Size = UDim2.new(1, 0, 0, 40)
 titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 
 local titleText = Instance.new("TextLabel", titleBar)
-titleText.Text = "Custom UI"
+titleText.Text = "Comet"
 titleText.Size = UDim2.new(1, -40, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -128,7 +128,7 @@ end
 -- Home Tab
 local homeTab = createTab("Home")
 local homeLabel = Instance.new("TextLabel", homeTab)
-homeLabel.Text = "Welcome to Simple UI!"
+homeLabel.Text = "Comet ;)"
 homeLabel.Size = UDim2.new(1, 0, 0, 50)
 homeLabel.Position = UDim2.new(0, 0, 0, 10)
 homeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -137,8 +137,14 @@ homeLabel.Font = Enum.Font.GothamBold
 homeLabel.BackgroundTransparency = 1
 
 -- Add additional features below this line with ease
--- Function to Create an Animated Slider
+-- Function to Create an Animated and Polished Slider
 local function createAnimatedSlider(parent, position, size, min, max, defaultValue, callback)
+    -- Ensure Parent Exists
+    if not parent then
+        error("Parent frame not provided for slider!")
+        return
+    end
+
     -- Slider Frame
     local sliderFrame = Instance.new("Frame", parent)
     sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
@@ -148,7 +154,7 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     sliderFrame.ClipsDescendants = true
 
     local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0, 12)
+    sliderCorner.CornerRadius = UDim.new(0, 10)
 
     -- Shadow Effect
     local shadow = Instance.new("ImageLabel", sliderFrame)
@@ -186,7 +192,7 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     local handleCorner = Instance.new("UICorner", sliderHandle)
     handleCorner.CornerRadius = UDim.new(0, 10)
 
-    -- Glow Effect for Handle
+    -- Handle Glow Animation
     local handleGlow = Instance.new("UIGradient", sliderHandle)
     handleGlow.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 180, 255)),
@@ -200,21 +206,31 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
     sliderHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
+
+            -- Enlarge Handle and Add Glow During Drag
             sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.1, 0), -- Slightly enlarge during drag
+                UDim2.new(sliderHandle.Size.X.Scale, 0, 1.1, 0), -- Slightly enlarge handle
                 Enum.EasingDirection.Out,
                 Enum.EasingStyle.Quad,
                 0.2,
                 true
             )
+
+            -- Pulse Glow Animation
+            while dragging do
+                handleGlow.Offset = Vector2.new(handleGlow.Offset.X + 0.05, 0)
+                task.wait(0.05)
+            end
         end
     end)
 
     userInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+
+            -- Restore Handle Size After Drag
             sliderHandle:TweenSize(
-                UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0), -- Restore size after drag
+                UDim2.new(sliderHandle.Size.X.Scale, 0, 1, 0),
                 Enum.EasingDirection.Out,
                 Enum.EasingStyle.Quad,
                 0.2,
@@ -229,30 +245,38 @@ local function createAnimatedSlider(parent, position, size, min, max, defaultVal
             local percent = x / sliderBar.AbsoluteSize.X
             local value = math.floor(min + percent * (max - min))
 
+            -- Smoothly Update Handle Position
             sliderHandle:TweenSize(
-                UDim2.new(percent, 0, 1.1, 0), -- Animated handle movement
+                UDim2.new(percent, 0, 1.1, 0), -- Handle moves with animation
                 Enum.EasingDirection.Out,
                 Enum.EasingStyle.Quad,
                 0.05,
                 true
             )
 
+            -- Update Value Label
             valueLabel.Text = "Value: " .. tostring(value)
             if callback then
-                callback(value) -- Trigger the callback with the new value
+                callback(value) -- Trigger the callback
             end
         end
     end)
 end
 
 -- Example Usage
-local homeTab = Instance.new("Frame") -- Replace with the actual tab or parent frame
-homeTab.Size = UDim2.new(1, 0, 1, 0)
-homeTab.Parent = script.Parent -- Adjust to the actual UI hierarchy
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+local homeTab = Instance.new("Frame", screenGui) -- Replace this with the actual parent frame in your UI
+homeTab.Size = UDim2.new(0, 400, 0, 300)
+homeTab.Position = UDim2.new(0.5, -200, 0.5, -150)
+homeTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+homeTab.AnchorPoint = Vector2.new(0.5, 0.5)
+
+local corner = Instance.new("UICorner", homeTab)
+corner.CornerRadius = UDim.new(0, 10)
 
 createAnimatedSlider(
     homeTab, -- Parent
-    UDim2.new(0.5, 0, 0.5, 0), -- Position
+    UDim2.new(0.5, 0, 0.6, 0), -- Position
     UDim2.new(0, 300, 0, 60), -- Size
     0, -- Min value
     100, -- Max value

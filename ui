@@ -258,3 +258,94 @@ createPolishedSlider(
 
 -- END OF SLIDERS ------------------------------------------------------------------------------------------------------------------------------
 
+-- Function to Create a Toggle
+local function createToggle(parent, position, size, text, defaultValue, callback)
+    -- Toggle Frame
+    local toggleFrame = Instance.new("Frame", parent)
+    toggleFrame.Size = size or UDim2.new(0, 300, 0, 40)
+    toggleFrame.Position = position or UDim2.new(0.5, -150, 0.2, 0)
+    toggleFrame.AnchorPoint = Vector2.new(0.5, 0)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+    local toggleCorner = Instance.new("UICorner", toggleFrame)
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+
+    -- Label Text
+    local toggleLabel = Instance.new("TextLabel", toggleFrame)
+    toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 10, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.Text = text or "Toggle"
+    toggleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+    toggleLabel.TextScaled = true
+    toggleLabel.Font = Enum.Font.GothamBold
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Toggle Background
+    local toggleBackground = Instance.new("Frame", toggleFrame)
+    toggleBackground.Size = UDim2.new(0, 50, 0, 20)
+    toggleBackground.Position = UDim2.new(0.9, -50, 0.5, -10)
+    toggleBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+
+    local backgroundCorner = Instance.new("UICorner", toggleBackground)
+    backgroundCorner.CornerRadius = UDim.new(1, 0)
+
+    -- Toggle Handle
+    local toggleHandle = Instance.new("Frame", toggleBackground)
+    toggleHandle.Size = UDim2.new(0, 18, 1, 0)
+    toggleHandle.Position = UDim2.new(0, 2, 0, 0)
+    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+
+    local handleCorner = Instance.new("UICorner", toggleHandle)
+    handleCorner.CornerRadius = UDim.new(1, 0)
+
+    -- State Indicator
+    local isToggled = defaultValue or false
+    if isToggled then
+        toggleHandle.Position = UDim2.new(1, -20, 0, 0)
+        toggleBackground.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
+    end
+
+    -- Click Event
+    toggleBackground.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isToggled = not isToggled
+
+            -- Smooth Animation for Handle Movement
+            local targetPosition = isToggled and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
+            local targetColor = isToggled and Color3.fromRGB(80, 170, 255) or Color3.fromRGB(60, 60, 60)
+
+            toggleHandle:TweenPosition(
+                targetPosition,
+                Enum.EasingDirection.Out,
+                Enum.EasingStyle.Quad,
+                0.2,
+                true
+            )
+
+            -- Background Color Animation
+            game:GetService("TweenService"):Create(
+                toggleBackground,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = targetColor}
+            ):Play()
+
+            -- Trigger Callback
+            if callback then
+                callback(isToggled)
+            end
+        end
+    end)
+end
+
+-- Example Toggle
+createToggle(
+    contentFrame, -- Parent (from the base UI)
+    UDim2.new(0.5, 0, 0.3, 0), -- Position
+    UDim2.new(0, 300, 0, 40), -- Size
+    "Enable Feature", -- Label Text
+    false, -- Default State
+    function(state) -- Callback Function
+        print("Toggle state is now:", state)
+    end
+)

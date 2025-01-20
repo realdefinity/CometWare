@@ -1,11 +1,11 @@
 -- Ensure Only One Instance of the UI
-if game.CoreGui:FindFirstChild("CustomUI") then
-    game.CoreGui.CustomUI:Destroy()
+if game.CoreGui:FindFirstChild("Comet") then
+    game.CoreGui.Comet:Destroy()
 end
 
 -- ScreenGui and Main Frame
 local screenGui = Instance.new("ScreenGui", game.CoreGui)
-screenGui.Name = "CustomUI"
+screenGui.Name = "Comet"
 
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Name = "MainFrame"

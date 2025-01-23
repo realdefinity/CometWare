@@ -9,72 +9,6 @@ local Window = Rayfield:CreateWindow({
     DisableRayfieldPrompts = false
 })
 
--- Compatibility Check
-local requiredFunctions = {
-    firetouchinterest = { "Kill Aura" },
-    fireclickdetector = { "Auto Chest" },
-    firesignal = { "Advanced Interactions" },
-    getconnections = { "Event Hooks" },
-    getsenv = { "Advanced Debugging" },
-    getrawmetatable = { "Anti-Cheat Bypass" },
-    setupvalue = { "Advanced Debugging" },
-    getupvalue = { "Advanced Debugging" }
-}
-
-local passes, fails, totalFunctions = 0, 0, 0
-local failedFunctions = {}
-
--- Function to test if a global function exists
-local function testGlobal(funcName)
-    totalFunctions = totalFunctions + 1
-    local func = rawget(getgenv(), funcName) or _G[funcName] -- Check both getgenv and _G for flexibility
-
-    if typeof(func) == "function" then
-        passes = passes + 1
-        return true
-    else
-        fails = fails + 1
-        table.insert(failedFunctions, funcName)
-        return false
-    end
-end
-
--- Perform Compatibility Tests
-for funcName, _ in pairs(requiredFunctions) do
-    testGlobal(funcName)
-end
-
--- Calculate Compatibility
-local compatibilityPercent = math.floor((passes / totalFunctions) * 100)
-local executorInfo = identifyexecutor and identifyexecutor() or "Unknown Executor"
-
--- Notify User
-Rayfield:Notify({
-    Title = "Executor Compatibility Check",
-    Content = "Executor: " .. executorInfo ..
-        "\nCompatibility: " .. compatibilityPercent .. "% of required functions supported.",
-    Duration = 10,
-    Image = 4483362458 -- Replace with your desired image ID
-})
-
--- Add Executor Info to Rayfield UI
-local ExecutorTab = Window:CreateTab("Executor Info", 4483362458) -- Executor Info Tab
-ExecutorTab:CreateSection("UNC Compatibility Check")
-ExecutorTab:CreateLabel("Executor: " .. executorInfo)
-ExecutorTab:CreateLabel("Compatibility: " .. compatibilityPercent .. "%")
-ExecutorTab:CreateLabel("Functions Passed: " .. passes)
-ExecutorTab:CreateLabel("Functions Failed: " .. fails)
-
--- Add Failed Functions to Tab
-if #failedFunctions > 0 then
-    ExecutorTab:CreateSection("Failed Functions")
-    for _, funcName in ipairs(failedFunctions) do
-        ExecutorTab:CreateLabel(funcName .. ": ❌")
-    end
-else
-    ExecutorTab:CreateLabel("All functions passed successfully! ✅")
-end
-
 local PlayerTab = Window:CreateTab("Player", 4483362458) -- Title, Image
 
 PlayerTab:CreateSlider({
@@ -568,214 +502,90 @@ MiscTab:CreateToggle({
         end
     end
 })
--- Available Themes
-local themes = {
-    "Default",
-    "Amber Glow",
-    "Amethyst",
-    "Bloom",
-    "Dark Blue",
-    "Green",
-    "Light",
-    "Ocean",
-    "Serenity"
-}
 
--- Theme Identifier Mapping
-local themeIdentifiers = {
-    ["Default"] = "Default",
-    ["Amber Glow"] = "AmberGlow",
-    ["Amethyst"] = "Amethyst",
-    ["Bloom"] = "Bloom",
-    ["Dark Blue"] = "DarkBlue",
-    ["Green"] = "Green",
-    ["Light"] = "Light",
-    ["Ocean"] = "Ocean",
-    ["Serenity"] = "Serenity"
-}
-
--- Function to Change UI Theme
-local function changeTheme(selectedTheme)
-    local themeIdentifier = themeIdentifiers[selectedTheme]
-    if themeIdentifier then
-        Rayfield:ChangeTheme(themeIdentifier)
-        Rayfield:Notify({
-            Title = "UI Theme Changed",
-            Content = "New Theme: " .. selectedTheme,
-            Duration = 4,
-        })
-    else
-        Rayfield:Notify({
-            Title = "Theme Error",
-            Content = "Invalid theme selected.",
-            Duration = 4,
-        })
-    end
-end
-
--- Add UI Customization Tab
-local UITab = Window:CreateTab("UI Customization", 4483362458) -- UI Tab
-
--- Theme Selector
-UITab:CreateDropdown({
-    Name = "Select UI Theme",
-    Options = themes,
-    CurrentOption = "Default",
-    Flag = "Dropdown_UITheme",
-    Callback = function(selectedTheme)
-        changeTheme(selectedTheme)
-    end
-})
-
--- UI Reset Button
-UITab:CreateButton({
-    Name = "Reset UI Position",
-    Callback = function()
-        Rayfield:Destroy() -- Destroy and reload the UI
-        Rayfield:Reload()
-        Rayfield:Notify({
-            Title = "UI Reset",
-            Content = "UI position and layout have been reset.",
-            Duration = 4,
-        })
-    end
-})
 
 -- START OF AUTO BOSS ---------------------------------------------------------------------------------------------------------------------------------
 
+-- Assuming necessary services and variables are already defined like player, pathfindingService, and FarmingTab
 local autoBossActive = false
-local pathfindingService = game:GetService("PathfindingService")
-local player = game.Players.LocalPlayer
-
--- Define Boss Data
 local bossData = {
     ["The Saw"] = {Position = Vector3.new(-1104, 5, 4357)},
     ["Mob Leader"] = {Position = Vector3.new(-2848, 7, 5353)},
     ["Saber Expert"] = {Position = Vector3.new(-1428, 29, -749)},
-    ["Warden"] = {Position = Vector3.new(-4200, 210, 4300)},
-    ["Chief Warden"] = {Position = Vector3.new(-4300, 210, 4300)},
-    ["Swan"] = {Position = Vector3.new(-4500, 210, 4300)},
-    ["Ice Admiral"] = {Position = Vector3.new(700, 390, -6800)},
-    ["Don Swan"] = {Position = Vector3.new(-3900, 210, 4600)}
+    -- Add other bosses similarly...
 }
 
--- === Step 1: Security Kick Prevention ===
+-- Security Kick Prevention Enhanced
 local function preventSecurityKick()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local oldNamecall = mt.__namecall
-
-    mt.__namecall = function(self, ...)
-        local method = getnamecallmethod()
-        if tostring(self) == "Players" and method == "Kick" then
-            warn("[Anti-Cheat] Kick attempt blocked!")
-            return
-        end
-        return oldNamecall(self, ...)
-    end
-
-    setreadonly(mt, true)
-    print("[Anti-Cheat Bypass] Security kick prevention enabled.")
-end
-
--- === Step 2: Notify Player ===
-local function notify(title, content, duration)
-    Rayfield:Notify({
-        Title = title,
-        Content = content,
-        Duration = duration or 5,
-    })
-end
-
--- === Step 3: Find a Boss ===
-local function findBoss(bossName)
-    local enemiesFolder = workspace:FindFirstChild("Enemies")
-    if not enemiesFolder then
-        warn("[Auto Boss] Enemies folder not found.")
-        return nil
-    end
-
-    for _, enemy in pairs(enemiesFolder:GetChildren()) do
-        if enemy:IsA("Model") and enemy.Name:lower():find(bossName:lower()) and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            return enemy
-        end
-    end
-
-    return nil
-end
-
--- === Step 4: Pathfinding-Based Teleportation ===
-local function safeTeleport(targetPosition)
-    local character = player.Character
-    local humanoid = character and character:FindFirstChild("Humanoid")
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-
-    if humanoid and humanoidRootPart then
-        local path = pathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentJumpHeight = 10,
-            AgentMaxSlope = 45,
-        })
-
-        path:ComputeAsync(humanoidRootPart.Position, targetPosition)
-        if path.Status == Enum.PathStatus.Complete then
-            for _, waypoint in pairs(path:GetWaypoints()) do
-                humanoid:MoveTo(waypoint.Position)
-                humanoid.MoveToFinished:Wait()
-                task.wait(0.1) -- Simulate realistic movement
+    if setreadonly and getrawmetatable then
+        local mt = getrawmetatable(game)
+        if not mt.__namecall then return end
+        setreadonly(mt, false)
+        local oldNamecall = mt.__namecall
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if method == "Kick" then
+                warn("[Anti-Cheat] Kick attempt blocked for", self)
+                return
             end
-        else
-            warn("[Auto Boss] Pathfinding failed to compute a valid path.")
-            humanoidRootPart.CFrame = CFrame.new(targetPosition + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))) -- Teleport fallback
-        end
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
     end
 end
 
--- === Step 5: Equip the Best Weapon ===
+-- Improved Weapon Selection
 local function equipBestWeapon()
     local character = player.Character or player.CharacterAdded:Wait()
     local backpack = player.Backpack
-    local tools = {}
+    local bestWeapon = nil
+    local highestDamage = 0
 
-    for _, tool in pairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            table.insert(tools, tool)
+    for _, item in ipairs(backpack:GetChildren()) do
+        if item:IsA("Tool") and item:FindFirstChild("Damage") and item.Damage.Value > highestDamage then
+            bestWeapon = item
+            highestDamage = item.Damage.Value
         end
     end
 
-    table.sort(tools, function(a, b)
-        return a.Name > b.Name -- Alphabetical ranking (replace with your ranking logic)
-    end)
-
-    local bestWeapon = tools[1]
     if bestWeapon and not bestWeapon:IsDescendantOf(character) then
         character.Humanoid:EquipTool(bestWeapon)
         notify("Weapon Equipped", "Equipped: " .. bestWeapon.Name, 3)
     end
 end
 
--- === Step 6: Attack a Boss ===
-local function attackBoss(boss)
+-- Pathfinding-Based Safe Teleportation
+local function safeTeleport(targetPosition)
     local character = player.Character
     local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
 
-    if humanoidRootPart and boss and boss:FindFirstChild("HumanoidRootPart") then
-        repeat
-            humanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0) -- Stay slightly above
-            local combatTool = character:FindFirstChildOfClass("Tool")
-            if combatTool then
-                combatTool:Activate()
+    local path = pathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 10,
+        AgentMaxSlope = 45,
+    })
+    path:ComputeAsync(humanoidRootPart.Position, targetPosition)
+
+    path.Completed:Connect(function()
+        if path.Status == Enum.PathStatus.Complete then
+            for _, waypoint in pairs(path:GetWaypoints()) do
+                humanoidRootPart.CFrame = CFrame.new(waypoint.Position)
+                task.wait(0.1) -- Simulate realistic movement
             end
-            task.wait(math.random(0.2, 0.4)) -- Randomized delay
-        until not boss or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 or not autoBossActive
-    end
+        else
+            humanoidRootPart.CFrame = CFrame.new(targetPosition) -- Fallback teleport if pathfinding fails
+        end
+    end)
+    path:MoveTo()
 end
 
--- === Step 7: Main Auto Boss Logic ===
+-- Main Auto Boss Logic
 local function autoBossFarm()
-    preventSecurityKick() -- Enable security kick prevention
+    preventSecurityKick() -- Security measures
+    notify("Auto Boss", "Initiating ultimate boss farm.", 5)
 
     while autoBossActive do
         for bossName, data in pairs(bossData) do
@@ -790,14 +600,14 @@ local function autoBossFarm()
             else
                 notify("Searching for Boss", "Checking spawn for: " .. bossName, 3)
                 safeTeleport(data.Position)
-                task.wait(math.random(2, 4)) -- Respawn wait
+                task.wait(1) -- Adjust as necessary
             end
         end
-        task.wait(math.random(3, 5)) -- Delay between scans
+        task.wait(1) -- Adjust scan delay as needed
     end
 end
 
--- === Step 8: Toggle Auto Boss ===
+-- Toggle Auto Boss
 FarmingTab:CreateToggle({
     Name = "Ultimate Auto Boss",
     CurrentValue = false,
@@ -805,10 +615,9 @@ FarmingTab:CreateToggle({
     Callback = function(Value)
         autoBossActive = Value
         if autoBossActive then
-            notify("Auto Boss", "Starting the ultimate boss farm.", 5)
             task.spawn(autoBossFarm)
         else
-            notify("Auto Boss", "Stopped the ultimate boss farm.", 5)
+            notify("Auto Boss", "Ultimate boss farm stopped.", 5)
         end
     end,
 })
@@ -850,121 +659,14 @@ MiscTab:CreateButton({
     end
 })
 
--- UI STATS ---------------------------------------------------------------------------------------------------------------------------------
-
--- Add a Stats Panel to the Rayfield UI
-local statsSection = FarmingTab:CreateSection("Stats") -- Create a new section for stats
-local currentBossLabel = statsSection:CreateLabel("Current Boss: None") -- Label for the current boss
-local bossesKilledLabel = statsSection:CreateLabel("Bosses Killed: 0") -- Label for total bosses killed
-local dropsCollectedLabel = statsSection:CreateLabel("Drops Collected: 0") -- Label for total drops collected
-
--- Variables to Track Stats
-local currentBossName = "None"
-local bossesKilled = 0
-local dropsCollected = 0
-
--- Update Stats Function
-local function updateStats()
-    currentBossLabel:Set("Current Boss: " .. currentBossName)
-    bossesKilledLabel:Set("Bosses Killed: " .. tostring(bossesKilled))
-    dropsCollectedLabel:Set("Drops Collected: " .. tostring(dropsCollected))
-end
-
--- Functions to Modify Stats
-local function setCurrentBoss(name)
-    currentBossName = name
-    updateStats()
-end
-
-local function incrementBossesKilled()
-    bossesKilled = bossesKilled + 1
-    updateStats()
-end
-
-local function incrementDropsCollected()
-    dropsCollected = dropsCollected + 1
-    updateStats()
-end
-
--- Example Usage (Integrate These into Your Script Logic)
--- Call `setCurrentBoss("Boss Name")` when targeting a boss
--- Call `incrementBossesKilled()` when a boss is defeated
--- Call `incrementDropsCollected()` when loot is collected
-
--- END OF UI STATS ---------------------------------------------------------------------------------------------------------------------------------
-
-
-
--- BOSS RESPAWN TIMER ---------------------------------------------------------------------------------------------------------------------------------
-
--- Boss Respawn Timer Variables
-local bossRespawnTimes = {
-    ["The Saw"] = 900, -- 15 minutes
-    ["Mob Leader"] = 1200, -- 20 minutes
-    ["Saber Expert"] = 1800, -- 30 minutes
-    ["Warden"] = 600, -- 10 minutes
-    ["Chief Warden"] = 600,
-    ["Swan"] = 1200,
-    ["Ice Admiral"] = 900,
-    ["Don Swan"] = 3600 -- 1 hour
-}
-local respawnTimers = {} -- Tracks respawn end times for each boss
-
--- Rayfield Section for Respawn Timers
-local respawnSection = FarmingTab:CreateSection("Respawn Timers")
-local respawnLabels = {}
-
--- Create Labels for Each Boss in Rayfield
-for bossName, _ in pairs(bossRespawnTimes) do
-    respawnLabels[bossName] = respawnSection:CreateLabel(bossName .. ": Ready")
-end
-
--- Update Respawn Timers Function
-local function updateRespawnTimers()
-    for bossName, endTime in pairs(respawnTimers) do
-        local remainingTime = math.max(0, endTime - os.time())
-        if remainingTime > 0 then
-            local minutes = math.floor(remainingTime / 60)
-            local seconds = remainingTime % 60
-            respawnLabels[bossName]:Set(bossName .. ": " .. string.format("%02d:%02d", minutes, seconds))
-        else
-            respawnLabels[bossName]:Set(bossName .. ": Ready")
-        end
-    end
-end
-
--- Set Respawn Timer for a Boss
-local function setRespawnTimer(bossName)
-    if bossRespawnTimes[bossName] then
-        respawnTimers[bossName] = os.time() + bossRespawnTimes[bossName]
-        Rayfield:Notify({
-            Title = "Boss Defeated",
-            Content = bossName .. " will respawn in " .. bossRespawnTimes[bossName] / 60 .. " minutes.",
-            Duration = 5,
-        })
-    end
-end
-
--- Timer Update Loop (Updates Every Second)
-task.spawn(function()
-    while true do
-        updateRespawnTimers()
-        task.wait(1) -- Update every second
-    end
-end)
-
--- Example Usage
--- Call `setRespawnTimer("The Saw")` when a boss is defeated in your farming logic
-
--- END OF BOSS RESPAWN TIMER ---------------------------------------------------------------------------------------------------------------------------------
-
-
 -- AUTO COLLECT DROPS ---------------------------------------------------------------------------------------------------------------------------------
 
--- Auto Collect Drops Variables
+-- Assuming that 'Rayfield' and 'FarmingTab' are already defined and imported from your existing script setup
+-- If not, you'll need to initialize them similar to how you set up other tabs in your Rayfield UI.
+
 local autoCollectDropsActive = false
-local collectionRange = 50 -- Max distance to collect drops
-local dropsFolderName = "Drops" -- Replace with the actual folder name for drops if known
+local collectionRange = 50  -- Max distance to collect drops
+local dropsFolderName = "Drops"  -- Replace with the actual folder name for drops if known
 
 -- Function to Collect Drops
 local function collectDrops()
@@ -979,55 +681,55 @@ local function collectDrops()
 
     if humanoidRootPart then
         for _, drop in pairs(dropsFolder:GetChildren()) do
-            if drop:IsA("BasePart") and (drop.Position - humanoidRootPart.Position).Magnitude <= collectionRange then
-                -- Move to the drop and collect it
+            if drop:IsA("BasePart") and (drop.Position - humanoidRootPart.Position).magnitude <= collectionRange then
                 humanoidRootPart.CFrame = CFrame.new(drop.Position)
-                task.wait(0.2) -- Small delay to mimic interaction
+                task.wait(0.2)  -- Small delay to mimic interaction
+                incrementDropsCollected()  -- Assuming this function is defined elsewhere in your script
 
-                -- Notify and update stats
-                incrementDropsCollected()
                 Rayfield:Notify({
                     Title = "Drop Collected",
                     Content = "Collected: " .. (drop.Name or "Unknown Drop"),
                     Duration = 3,
                 })
-
-                -- Destroy the drop (optional, depends on game mechanics)
-                drop:Destroy()
+                drop:Destroy()  -- Optional, depends on game mechanics
             end
         end
     end
 end
 
--- Auto Collect Drops Toggle
-FarmingTab:CreateToggle({
-    Name = "Auto Collect Drops",
-    CurrentValue = false,
-    Flag = "Toggle_AutoCollectDrops",
-    Callback = function(Value)
-        autoCollectDropsActive = Value
-        if autoCollectDropsActive then
-            Rayfield:Notify({
-                Title = "Auto Collect Drops",
-                Content = "Enabled auto collection of drops.",
-                Duration = 3,
-            })
-            -- Start the drop collection loop
-            task.spawn(function()
-                while autoCollectDropsActive do
-                    collectDrops()
-                    task.wait(1) -- Check for drops every second
-                end
-            end)
-        else
-            Rayfield:Notify({
-                Title = "Auto Collect Drops",
-                Content = "Disabled auto collection of drops.",
-                Duration = 3,
-            })
-        end
-    end,
-})
+-- Ensure the toggle is created within an existing tab that has been correctly initialized
+if FarmingTab then
+    FarmingTab:CreateToggle({
+        Name = "Auto Collect Drops",
+        CurrentValue = false,
+        Flag = "Toggle_AutoCollectDrops",
+        Callback = function(Value)
+            autoCollectDropsActive = Value
+            if autoCollectDropsActive then
+                Rayfield:Notify({
+                    Title = "Auto Collect Drops",
+                    Content = "Enabled auto collection of drops.",
+                    Duration = 3,
+                })
+                task.spawn(function()
+                    while autoCollectDropsActive do
+                        collectDrops()
+                        task.wait(1)  -- Check for drops every second
+                    end
+                end)
+            else
+                Rayfield:Notify({
+                    Title = "Auto Collect Drops",
+                    Content = "Disabled auto collection of drops.",
+                    Duration = 3,
+                })
+            end
+        end,
+    })
+else
+    warn("FarmingTab not found or not initialized correctly.")
+end
+
 
 -- END OF AUTO COLLECT DROPS ---------------------------------------------------------------------------------------------------------------------------------
 
@@ -1110,81 +812,13 @@ FarmingTab:CreateToggle({
 
 -- END OF DETECTION COLLECTION ---------------------------------------------------------------------------------------------------------------------------------
 
--- START OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
-
--- Add Kill Aura Features to PlayerTab
-
--- Variables
-getgenv().KillAuraActive = false
-getgenv().KillAuraRange = 15 -- Default range in studs
-
--- Kill Aura Toggle
-PlayerTab:CreateToggle({
-    Name = "Kill Aura",
-    CurrentValue = false,
-    Flag = "KillAuraToggle",
-    Callback = function(Value)
-        getgenv().KillAuraActive = Value
-        if Value then
-            startKillAura()
-        end
-    end
-})
-
--- Kill Aura Range Slider
-PlayerTab:CreateSlider({
-    Name = "Kill Aura Range",
-    Range = {5, 50}, -- Min and Max range in studs
-    Increment = 1,
-    Suffix = " Studs",
-    CurrentValue = getgenv().KillAuraRange,
-    Flag = "KillAuraRange",
-    Callback = function(Value)
-        getgenv().KillAuraRange = Value
-    end
-})
-
--- Function to Start Kill Aura
-function startKillAura()
-    spawn(function()
-        while getgenv().KillAuraActive do
-            local player = game.Players.LocalPlayer
-            local character = player.Character
-            local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-                    if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChildOfClass("Humanoid") then
-                        local enemyHRP = enemy.HumanoidRootPart
-                        local distance = (humanoidRootPart.Position - enemyHRP.Position).Magnitude
-                        if distance <= getgenv().KillAuraRange then
-                            -- Perform the attack
-                            local combatTool = player.Backpack:FindFirstChildOfClass("Tool") or character:FindFirstChildOfClass("Tool")
-                            if combatTool then
-                                -- Equip the combat tool
-                                character.Humanoid:EquipTool(combatTool)
-                                -- Teleport near the enemy
-                                humanoidRootPart.CFrame = enemyHRP.CFrame * CFrame.new(0, 0, -3)
-                                -- Activate the tool to attack
-                                combatTool:Activate()
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(0.1) -- Small delay to prevent excessive loop execution
-        end
-    end)
-end
-
--- END OF KILL AURA ---------------------------------------------------------------------------------------------------------------------------------
-
--- START OF AUTO MONEY  ---------------------------------------------------------------------------------------------------------------------------------
+-- START OF AUTO CHEST  ---------------------------------------------------------------------------------------------------------------------------------
 
 -- Auto Chest Collect Toggle for PlayerTab
 
 -- Variables
 getgenv().AutoChestCollect = false
-local MaxSpeed = 300 -- Studs per second
+local MaxSpeed = 700 -- Studs per second
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local UncheckedChests = {}
 local FirstRun = true
@@ -1280,9 +914,9 @@ PlayerTab:CreateToggle({
 -- Optional Slider to Adjust Speed
 PlayerTab:CreateSlider({
     Name = "Chest Collection Speed",
-    Range = {100, 500}, -- Speed range (studs per second)
+    Range = {100, 700}, -- Speed range (studs per second)
     Increment = 10,
-    Suffix = " Speed",
+    Suffix = "Speed",
     CurrentValue = MaxSpeed,
     Flag = "Slider1", -- Ensure unique flag for this slider
     Callback = function(Value)
@@ -1290,117 +924,156 @@ PlayerTab:CreateSlider({
     end
 })
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
+-- Compatibility Check
+local requiredFunctions = {
+    firetouchinterest = { "Kill Aura" },
+    fireclickdetector = { "Auto Chest" },
+    firesignal = { "Advanced Interactions" },
+    getconnections = { "Event Hooks" },
+    getsenv = { "Advanced Debugging" },
+    getrawmetatable = { "Anti-Cheat Bypass" },
+    setupvalue = { "Advanced Debugging" },
+    getupvalue = { "Advanced Debugging" }
+}
 
--- Aimbot Variables
-local AimbotEnabled = false
-local AimSmoothness = 0.1 -- Default smoothness
-local FOV = 300 -- Default Field of View
-local FOVCircle = Drawing.new("Circle")
-local Target = nil
+local passes, fails, totalFunctions = 0, 0, 0
+local failedFunctions = {}
 
--- FOV Circle Settings
-FOVCircle.Visible = false
-FOVCircle.Radius = FOV
-FOVCircle.Thickness = 1
-FOVCircle.Color = Color3.new(1, 0, 0) -- Red by default
-FOVCircle.Transparency = 1
-FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+-- Function to test if a global function exists
+local function testGlobal(funcName)
+    totalFunctions = totalFunctions + 1
+    local func = rawget(getgenv(), funcName) or _G[funcName] -- Check both getgenv and _G for flexibility
 
--- Function to Get Closest Enemy
-local function getClosestEnemy()
-    local closestEnemy = nil
-    local shortestDistance = FOV
-
-    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            local head = enemy:FindFirstChild("HumanoidRootPart") -- Use HumanoidRootPart for targeting
-            local screenPosition, onScreen = Camera:WorldToViewportPoint(head.Position)
-
-            if onScreen then
-                local mousePosition = UserInputService:GetMouseLocation()
-                local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - mousePosition).Magnitude
-
-                if distance < shortestDistance and distance <= FOV then
-                    shortestDistance = distance
-                    closestEnemy = head
-                end
-            end
-        end
-    end
-
-    return closestEnemy
-end
-
--- Aimbot Logic
-local function aimbot()
-    if AimbotEnabled then
-        Target = getClosestEnemy()
-
-        if Target then
-            local targetScreenPosition = Camera:WorldToViewportPoint(Target.Position)
-            local mousePosition = UserInputService:GetMouseLocation()
-            local aimPosition = mousePosition:Lerp(Vector2.new(targetScreenPosition.X, targetScreenPosition.Y), AimSmoothness)
-
-            mousemoverel(aimPosition.X - mousePosition.X, aimPosition.Y - mousePosition.Y)
-        end
+    if typeof(func) == "function" then
+        passes = passes + 1
+        return true
+    else
+        fails = fails + 1
+        table.insert(failedFunctions, funcName)
+        return false
     end
 end
 
--- Update FOV Circle
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-end)
+-- Perform Compatibility Tests
+for funcName, _ in pairs(requiredFunctions) do
+    testGlobal(funcName)
+end
 
--- Bind Aimbot to RenderStepped
-RunService.RenderStepped:Connect(aimbot)
+-- Calculate Compatibility
+local compatibilityPercent = math.floor((passes / totalFunctions) * 100)
+local executorInfo = identifyexecutor and identifyexecutor() or "Unknown Executor"
 
--- Rayfield Integration: Add to Player Tab
-PlayerTab:CreateToggle({
-    Name = "Enable Aimbot",
-    CurrentValue = false,
-    Flag = "Toggle1", -- Unique flag
-    Callback = function(Value)
-        AimbotEnabled = Value
-        FOVCircle.Visible = Value -- Show/Hide FOV Circle
-    end
+-- Notify User
+Rayfield:Notify({
+    Title = "Executor Compatibility Check",
+    Content = "Executor: " .. executorInfo ..
+        "\nCompatibility: " .. compatibilityPercent .. "% of required functions supported.",
+    Duration = 10,
+    Image = 4483362458 -- Replace with your desired image ID
 })
 
-PlayerTab:CreateSlider({
-    Name = "Smoothness",
-    Range = {0.05, 1},
-    Increment = 0.01,
-    Suffix = "",
-    CurrentValue = AimSmoothness,
-    Flag = "Slider1", -- Unique flag
-    Callback = function(Value)
-        AimSmoothness = Value
+-- Add Executor Info to Rayfield UI
+local ExecutorTab = Window:CreateTab("Executor Info", 4483362458) -- Executor Info Tab
+ExecutorTab:CreateSection("UNC Compatibility Check")
+ExecutorTab:CreateLabel("Executor: " .. executorInfo)
+ExecutorTab:CreateLabel("Compatibility: " .. compatibilityPercent .. "%")
+ExecutorTab:CreateLabel("Functions Passed: " .. passes)
+ExecutorTab:CreateLabel("Functions Failed: " .. fails)
+
+-- Add Failed Functions to Tab
+if #failedFunctions > 0 then
+    ExecutorTab:CreateSection("Failed Functions")
+    for _, funcName in ipairs(failedFunctions) do
+        ExecutorTab:CreateLabel(funcName .. ": ❌")
     end
+else
+    ExecutorTab:CreateLabel("All functions passed successfully! ✅")
+end
+
+-- Assuming Rayfield and other necessary modules are already initialized
+local Rayfield = require(game.ReplicatedStorage.Rayfield) -- Adjust path as needed
+local player = game.Players.LocalPlayer
+
+-- Notification Function
+local function notify(title, content, duration)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = duration or 5,
+    })
+end
+
+-- Boss Spawn Alert
+local function checkForBossSpawns()
+    local bosses = {"The Saw", "Mob Leader", "Saber Expert"}  -- List your game's bosses
+    for _, bossName in pairs(bosses) do
+        local bossExists = workspace:FindFirstChild(bossName)
+        if bossExists then
+            notify("Boss Alert", bossName .. " has spawned!", 10)
+        end
+    end
+end
+
+-- Health Alert
+local function monitorHealth()
+    local health = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health
+    if health and health < 20 then -- Threshold of 20 health
+        notify("Health Alert", "Your health is low!", 10)
+    end
+end
+
+-- Inventory Full Alert
+local function checkInventoryStatus()
+    local inventory = player:FindFirstChild("Backpack")
+    local numberOfItems = inventory and #inventory:GetChildren() or 0
+    local maxItems = 10 -- Set to your game's max inventory capacity
+
+    if numberOfItems >= maxItems then
+        notify("Inventory Alert", "Your inventory is full!", 10)
+    end
+end
+
+-- Scheduler or Event Loop
+local function startAlertSystem()
+    while wait(10) do  -- Check every 10 seconds
+        checkForBossSpawns()
+        monitorHealth()
+        checkInventoryStatus()
+    end
+end
+
+-- Configuration UI in Rayfield
+local settingsTab = Rayfield:CreateTab("Settings")
+local alertSettingsSection = settingsTab:CreateSection("Alert Settings")
+
+alertSettingsSection:CreateToggle({
+    Name = "Enable Boss Spawn Alerts",
+    CurrentValue = true,
+    Callback = function(value)
+        enableBossAlerts = value  -- You'll need to implement usage of these settings in the respective functions
+    end,
 })
 
-PlayerTab:CreateSlider({
-    Name = "Field of View",
-    Range = {100, 1000},
-    Increment = 10,
-    Suffix = " px",
-    CurrentValue = FOV,
-    Flag = "Slider2", -- Unique flag
-    Callback = function(Value)
-        FOV = Value
-        FOVCircle.Radius = Value
-    end
+alertSettingsSection:CreateToggle({
+    Name = "Enable Health Alerts",
+    CurrentValue = true,
+    Callback = function(value)
+        enableHealthAlerts = value
+    end,
 })
 
-PlayerTab:CreateColorPicker({
-    Name = "FOV Circle Color",
-    CurrentValue = FOVCircle.Color,
-    Flag = "ColorPicker1", -- Unique flag
-    Callback = function(Value)
-        FOVCircle.Color = Value
-    end
+alertSettingsSection:CreateToggle({
+    Name = "Enable Inventory Alerts",
+    CurrentValue = true,
+    Callback = function(value)
+        enableInventoryAlerts = value
+    end,
 })
 
+-- Starting the alert system
+task.spawn(startAlertSystem)
+
+-- Ensuring to use global variables to manage toggles state if required
+enableBossAlerts = true
+enableHealthAlerts = true
+enableInventoryAlerts = true

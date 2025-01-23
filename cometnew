@@ -1290,3 +1290,138 @@ PlayerTab:CreateSlider({
     end
 })
 
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local AimbotEnabled = false
+local AimSmoothness = 0.1 -- Smoothness factor
+local FOV = 300 -- Field of View for targeting
+local FOVCircle = Drawing.new("Circle")
+local Target = nil
+
+-- FOV Circle Settings
+FOVCircle.Visible = false
+FOVCircle.Radius = FOV
+FOVCircle.Thickness = 1
+FOVCircle.Color = Color3.new(1, 0, 0) -- Red FOV circle
+FOVCircle.Transparency = 1
+FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+-- Function to Get the Closest Enemy
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local shortestDistance = FOV
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team then
+            local character = player.Character
+            local head = character and character:FindFirstChild("Head")
+            local humanoid = character and character:FindFirstChild("Humanoid")
+
+            if head and humanoid and humanoid.Health > 0 then
+                local screenPosition, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local mousePosition = UserInputService:GetMouseLocation()
+                    local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - mousePosition).Magnitude
+
+                    if distance < shortestDistance and distance <= FOV then
+                        shortestDistance = distance
+                        closestEnemy = head
+                    end
+                end
+            end
+        end
+    end
+
+    return closestEnemy
+end
+
+-- Aimbot Logic
+local function aimbot()
+    if AimbotEnabled then
+        Target = getClosestEnemy()
+
+        if Target then
+            local targetScreenPosition = Camera:WorldToViewportPoint(Target.Position)
+            local mousePosition = UserInputService:GetMouseLocation()
+            local aimPosition = mousePosition:Lerp(Vector2.new(targetScreenPosition.X, targetScreenPosition.Y), AimSmoothness)
+
+            mousemoverel(aimPosition.X - mousePosition.X, aimPosition.Y - mousePosition.Y)
+        end
+    end
+end
+
+-- Update FOV Circle Position
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+end)
+
+-- Bind Aimbot to RenderStepped
+RunService.RenderStepped:Connect(aimbot)
+
+-- Rayfield UI Integration
+local Window = Rayfield:CreateWindow({
+    Name = "Arsenal Aimbot",
+    LoadingTitle = "Perfect Aimbot - Arsenal",
+    LoadingSubtitle = "By YourName",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ArsenalScripts",
+        FileName = "AimbotConfig"
+    }
+})
+
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458) -- Create Aimbot Tab
+
+-- Enable Aimbot Toggle
+AimbotTab:CreateToggle({
+    Name = "Enable Aimbot",
+    CurrentValue = false,
+    Flag = "Toggle1", -- Unique flag
+    Callback = function(Value)
+        AimbotEnabled = Value
+        FOVCircle.Visible = Value -- Show/Hide FOV Circle
+    end
+})
+
+-- Smoothness Slider
+AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0.05, 1},
+    Increment = 0.01,
+    Suffix = "",
+    CurrentValue = AimSmoothness,
+    Flag = "Slider1", -- Unique flag
+    Callback = function(Value)
+        AimSmoothness = Value
+    end
+})
+
+-- FOV Slider
+AimbotTab:CreateSlider({
+    Name = "Field of View",
+    Range = {100, 1000},
+    Increment = 10,
+    Suffix = " px",
+    CurrentValue = FOV,
+    Flag = "Slider2", -- Unique flag
+    Callback = function(Value)
+        FOV = Value
+        FOVCircle.Radius = Value
+    end
+})
+
+-- FOV Circle Color Picker
+AimbotTab:CreateColorPicker({
+    Name = "FOV Circle Color",
+    CurrentValue = FOVCircle.Color,
+    Flag = "ColorPicker1", -- Unique flag
+    Callback = function(Value)
+        FOVCircle.Color = Value
+    end
+})

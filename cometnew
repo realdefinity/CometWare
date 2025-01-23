@@ -1364,17 +1364,6 @@ end)
 -- Bind Aimbot to RenderStepped
 RunService.RenderStepped:Connect(aimbot)
 
--- Rayfield UI Integration
-local Window = Rayfield:CreateWindow({
-    Name = "Arsenal Aimbot",
-    LoadingTitle = "Perfect Aimbot - Arsenal",
-    LoadingSubtitle = "By YourName",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "ArsenalScripts",
-        FileName = "AimbotConfig"
-    }
-})
 
 local AimbotTab = Window:CreateTab("Aimbot", 4483362458) -- Create Aimbot Tab
 

@@ -1,175 +1,25 @@
--- Load Rayfield Library
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- Create the Rayfield UI Window
-local Window = Rayfield:CreateWindow({
-    Name = "comet: arsenal edition",
-    LoadingTitle = "Initializing comet...",
-    LoadingSubtitle = "By Definity",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "Comet",
-        FileName = "Comet"
-    }
-})
-
--- Create Silent Aim Tab
-local MainTab = Window:CreateTab("Arsenal", 4483362458)
-
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-
--- Variables
-local SilentAimEnabled = false
-local FOV = 300
-local TargetPart = "Head" -- Can be "HumanoidRootPart"
-local FOVCircle = Drawing.new("Circle")
-
--- FOV Circle Settings
-FOVCircle.Visible = false
-FOVCircle.Radius = FOV
-FOVCircle.Thickness = 2
-FOVCircle.Color = Color3.fromRGB(0, 255, 0) -- Green
-FOVCircle.Transparency = 1
-
--- Function to Check Visibility
-local function isTargetVisible(targetPart)
-    local origin = Camera.CFrame.Position
-    local direction = (targetPart.Position - origin).Unit * 1000
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    rayParams.FilterDescendantsInstances = {Camera, Players.LocalPlayer.Character}
-
-    local result = workspace:Raycast(origin, direction, rayParams)
-    return result and result.Instance and result.Instance:IsDescendantOf(targetPart.Parent)
-end
-
--- Function to Get the Closest Target
-local function getClosestTarget()
-    local closestTarget = nil
-    local shortestDistance = FOV
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Team ~= Players.LocalPlayer.Team then
-            local character = player.Character
-            local targetPart = character and character:FindFirstChild(TargetPart)
-            local humanoid = character and character:FindFirstChild("Humanoid")
-
-            if targetPart and humanoid and humanoid.Health > 0 and isTargetVisible(targetPart) then
-                local screenPosition, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-
-                if onScreen then
-                    local mousePosition = UserInputService:GetMouseLocation()
-                    local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - mousePosition).Magnitude
-
-                    if distance < shortestDistance then
-                        shortestDistance = distance
-                        closestTarget = targetPart
-                    end
-                end
-            end
-        end
-    end
-
-    return closestTarget
-end
-
--- Silent Aim Logic
-local function silentAim()
-    if SilentAimEnabled then
-        local target = getClosestTarget()
-
-        if target then
-            -- Modify the mouse's hit target to the closest enemy
-            local shotDirection = (target.Position - Camera.CFrame.Position).Unit
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Camera.CFrame.Position + shotDirection)
-        end
-    end
-end
-
--- Bind Silent Aim Logic to RunService
-RunService.RenderStepped:Connect(silentAim)
-
--- Update FOV Circle
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-end)
-
--- Rayfield UI: Silent Aim Toggle
-MainTab:CreateToggle({
-    Name = "Enable Silent Aim",
-    CurrentValue = false,
-    Flag = "Toggle1",
-    Callback = function(Value)
-        SilentAimEnabled = Value
-        FOVCircle.Visible = Value -- Show/Hide FOV Circle
-    end
-})
-
--- Rayfield UI: FOV Slider
-MainTab:CreateSlider({
-    Name = "Field of View",
-    Range = {100, 1000},
-    Increment = 10,
-    Suffix = " px",
-    CurrentValue = FOV,
-    Flag = "Slider1",
-    Callback = function(Value)
-        FOV = Value
-        FOVCircle.Radius = Value
-    end
-})
-
--- Rayfield UI: FOV Circle Color Picker
-MainTab:CreateColorPicker({
-    Name = "FOV Circle Color",
-    CurrentValue = FOVCircle.Color,
-    Flag = "ColorPicker1",
-    Callback = function(Value)
-        FOVCircle.Color = Value
-    end
-})
-
--- Notify Script Loaded
-Rayfield:Notify({
-    Title = "Script Loaded",
-    Content = "Silent Aim is ready to use!",
-    Duration = 5,
-    Actions = {
-        Ignore = {
-            Name = "Okay",
-            Callback = function()
-                print("Notification dismissed.")
-            end
-        }
-    }
-})
-
--- Services
+-- ESP Module
+local ESP = {}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
 -- Variables
 local ESPEnabled = false
+local activeESP = {}
 
--- Function to Create ESP Lines
-local function createESPLine()
+-- Function to create a line
+local function createLine()
     local line = Drawing.new("Line")
     line.Thickness = 1.5
     line.Transparency = 1
-    line.Color = Color3.new(1, 1, 1) -- White by default
+    line.Color = Color3.fromRGB(255, 255, 255) -- Default to white
     return line
 end
 
--- Function to Add Skeleton ESP
+-- Function to create a skeleton for a player
 local function createSkeleton(player)
     local skeleton = {}
-
-    -- Body parts for skeleton
     local bodyParts = {
         "Head",
         "UpperTorso",
@@ -189,98 +39,102 @@ local function createSkeleton(player)
     }
 
     for _, partName in ipairs(bodyParts) do
-        skeleton[partName] = createESPLine()
+        skeleton[partName] = createLine()
     end
 
     return skeleton
 end
 
--- Function to Update Skeleton ESP
+-- Function to update a player's skeleton ESP
 local function updateSkeleton(player, skeleton)
     local character = player.Character
     if not character then return end
 
-    local head = character:FindFirstChild("Head")
-    local torso = character:FindFirstChild("UpperTorso")
-    local lowerTorso = character:FindFirstChild("LowerTorso")
+    local connections = {
+        {character:FindFirstChild("Head"), character:FindFirstChild("UpperTorso")},
+        {character:FindFirstChild("UpperTorso"), character:FindFirstChild("LowerTorso")},
+        {character:FindFirstChild("UpperTorso"), character:FindFirstChild("LeftUpperArm")},
+        {character:FindFirstChild("LeftUpperArm"), character:FindFirstChild("LeftLowerArm")},
+        {character:FindFirstChild("LeftLowerArm"), character:FindFirstChild("LeftHand")},
+        {character:FindFirstChild("UpperTorso"), character:FindFirstChild("RightUpperArm")},
+        {character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightLowerArm")},
+        {character:FindFirstChild("RightLowerArm"), character:FindFirstChild("RightHand")},
+        {character:FindFirstChild("LowerTorso"), character:FindFirstChild("LeftUpperLeg")},
+        {character:FindFirstChild("LeftUpperLeg"), character:FindFirstChild("LeftLowerLeg")},
+        {character:FindFirstChild("LeftLowerLeg"), character:FindFirstChild("LeftFoot")},
+        {character:FindFirstChild("LowerTorso"), character:FindFirstChild("RightUpperLeg")},
+        {character:FindFirstChild("RightUpperLeg"), character:FindFirstChild("RightLowerLeg")},
+        {character:FindFirstChild("RightLowerLeg"), character:FindFirstChild("RightFoot")}
+    }
 
-    if head and torso and lowerTorso then
-        local connections = {
-            {head, torso},
-            {torso, lowerTorso},
-            {torso, character:FindFirstChild("LeftUpperArm")},
-            {character:FindFirstChild("LeftUpperArm"), character:FindFirstChild("LeftLowerArm")},
-            {character:FindFirstChild("LeftLowerArm"), character:FindFirstChild("LeftHand")},
-            {torso, character:FindFirstChild("RightUpperArm")},
-            {character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightLowerArm")},
-            {character:FindFirstChild("RightLowerArm"), character:FindFirstChild("RightHand")},
-            {lowerTorso, character:FindFirstChild("LeftUpperLeg")},
-            {character:FindFirstChild("LeftUpperLeg"), character:FindFirstChild("LeftLowerLeg")},
-            {character:FindFirstChild("LeftLowerLeg"), character:FindFirstChild("LeftFoot")},
-            {lowerTorso, character:FindFirstChild("RightUpperLeg")},
-            {character:FindFirstChild("RightUpperLeg"), character:FindFirstChild("RightLowerLeg")},
-            {character:FindFirstChild("RightLowerLeg"), character:FindFirstChild("RightFoot")}
-        }
+    for _, connection in ipairs(connections) do
+        local part1, part2 = connection[1], connection[2]
+        local line = skeleton[part1 and part1.Name or ""]
+        if line and part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
+            local pos1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
+            local pos2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
 
-        for _, connection in ipairs(connections) do
-            local part1, part2 = connection[1], connection[2]
-            if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
-                local line = skeleton[part1.Name]
-                if line then
-                    local pos1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
-                    local pos2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
-
-                    if onScreen1 and onScreen2 then
-                        line.Visible = true
-                        line.From = Vector2.new(pos1.X, pos1.Y)
-                        line.To = Vector2.new(pos2.X, pos2.Y)
-                    else
-                        line.Visible = false
-                    end
-                end
+            if onScreen1 and onScreen2 then
+                line.Visible = true
+                line.From = Vector2.new(pos1.X, pos1.Y)
+                line.To = Vector2.new(pos2.X, pos2.Y)
+            else
+                line.Visible = false
             end
-        end
-    else
-        for _, line in pairs(skeleton) do
+        elseif line then
             line.Visible = false
         end
     end
 end
 
--- Function to Remove ESP Lines
+-- Function to clean up ESP for a player
 local function removeSkeleton(skeleton)
     for _, line in pairs(skeleton) do
         line:Remove()
     end
 end
 
--- ESP Management
-local activeSkeletons = {}
+-- ESP UI Setup
+function ESP:SetupUI(MainTab)
+    MainTab:CreateToggle({
+        Name = "Enable ESP",
+        CurrentValue = false,
+        Flag = "Toggle1", -- Unique flag for the ESP toggle
+        Callback = function(Value)
+            ESPEnabled = Value
+        end
+    })
+end
 
-RunService.RenderStepped:Connect(function()
-    if ESPEnabled then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Players.LocalPlayer and player.Team ~= Players.LocalPlayer.Team then
-                if not activeSkeletons[player] then
-                    activeSkeletons[player] = createSkeleton(player)
+-- ESP Runtime Logic
+function ESP:Run()
+    -- Update ESP on RenderStep
+    RunService.RenderStepped:Connect(function()
+        if ESPEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= Players.LocalPlayer and player.Team ~= Players.LocalPlayer.Team then
+                    if not activeESP[player] then
+                        activeESP[player] = createSkeleton(player)
+                    end
+                    updateSkeleton(player, activeESP[player])
                 end
-                updateSkeleton(player, activeSkeletons[player])
+            end
+        else
+            -- Clean up ESP when disabled
+            for player, skeleton in pairs(activeESP) do
+                removeSkeleton(skeleton)
+                activeESP[player] = nil
             end
         end
-    else
-        for player, skeleton in pairs(activeSkeletons) do
-            removeSkeleton(skeleton)
-            activeSkeletons[player] = nil
-        end
-    end
-end)
+    end)
 
--- Rayfield Toggle for ESP
-MainTab:CreateToggle({
-    Name = "Enable Skeleton ESP",
-    CurrentValue = false,
-    Flag = "Toggle2",
-    Callback = function(Value)
-        ESPEnabled = Value
-    end
-})
+    -- Clean up ESP when a player leaves
+    Players.PlayerRemoving:Connect(function(player)
+        if activeESP[player] then
+            removeSkeleton(activeESP[player])
+            activeESP[player] = nil
+        end
+    end)
+end
+
+return ESP

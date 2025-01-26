@@ -1,0 +1,467 @@
+-- Load Rayfield Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create the Rayfield UI Window
+local Window = Rayfield:CreateWindow({
+    Name = "COMET: shrimp game edition",
+    LoadingTitle = "Loading Shrimp Game...",
+    LoadingSubtitle = "By Definity",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "Comet shrimp game", -- Save configs in a folder
+        FileName = "ShrimpDominator" -- Config file name
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "https://discord.gg/qeFQ57eqtj", -- Replace with your Discord invite if needed
+        RememberJoins = true
+    }
+})
+
+-- 🌟 Tabs for Features
+local MainTab = Window:CreateTab("Main Features", 4483362458) -- Main gameplay features
+local VisualsTab = Window:CreateTab("Visuals", 4483362458) -- ESP & visuals
+local MovementTab = Window:CreateTab("Movement", 4483362458) -- Speed, jump boosts
+local MiscTab = Window:CreateTab("Miscellaneous", 4483362458) -- Other fun stuff
+
+-- 🌟 Global Variables (Toggle States)
+local toggles = {
+    espEnabled = false,
+    autoWin = false,
+    infiniteJump = false,
+    speedBoost = false,
+    jumpBoost = false
+}
+
+-- 🌟 Function to Notify Players
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- 🌟 MainTab: Auto Win Toggle
+MainTab:CreateToggle({
+    Name = "Enable Auto Win",
+    CurrentValue = false,
+    Flag = "AutoWinToggle",
+    Callback = function(Value)
+        toggles.autoWin = Value
+        notify("Auto Win", "Auto Win has been " .. (Value and "enabled" or "disabled") .. ".")
+    end
+})
+
+
+-- 🌟 MiscTab: Reset All Toggles
+MiscTab:CreateButton({
+    Name = "Reset All Features",
+    Callback = function()
+        -- Reset all toggles and states
+        for key, _ in pairs(toggles) do
+            toggles[key] = false
+        end
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
+        notify("Reset Features", "All features have been reset.")
+    end
+})
+
+-- FPS Booster and Setter with Rayfield UI Integration
+
+-- 🌟 FPS Booster Variables
+local FPSBooster = {}
+local toggles = {
+    fpsBoostEnabled = false
+}
+local defaultWalkSpeed = 16 -- Default Roblox walk speed (used in resets)
+
+-- 🌟 Function to Notify Players
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- 🌟 FPS Booster Logic
+function FPSBooster:Boost()
+    -- Optimize Workspace
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic -- Simplify materials
+            obj.Reflectance = 0 -- Remove reflections
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false -- Disable particles and trails
+        elseif obj:IsA("Beam") then
+            obj.Enabled = false -- Disable beams
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = false -- Disable unnecessary lights
+        end
+    end
+
+    -- Optimize Lighting
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false -- Disable global shadows
+    Lighting.FogEnd = 9e9 -- Remove fog
+    Lighting.Brightness = 1 -- Simplify brightness
+    Lighting.EnvironmentSpecularScale = 0 -- Disable specular effects
+    Lighting.EnvironmentDiffuseScale = 0 -- Disable diffuse lighting
+
+    -- Disable Terrain Decoration
+    if workspace:FindFirstChildOfClass("Terrain") then
+        workspace.Terrain.Decoration = false
+    end
+
+    -- Notify Player
+    notify("FPS Booster", "FPS Booster applied! Performance optimized.")
+end
+
+-- 🌟 FPS Setter Logic
+function FPSBooster:SetFPSCap(fps)
+    if setfpscap then
+        setfpscap(fps)
+        notify("FPS Cap", "FPS cap set to " .. tostring(fps) .. " FPS.")
+    else
+        notify("Error", "Your executor does not support `setfpscap`.")
+    end
+end
+
+-- 🌟 UI Integration
+VisualsTab:CreateButton({
+    Name = "Apply FPS Boost",
+    Callback = function()
+        FPSBooster:Boost()
+    end
+})
+
+-- FPS Cap Slider
+VisualsTab:CreateSlider({
+    Name = "Set FPS Cap",
+    Range = {30, 300}, -- Min/Max FPS values
+    Increment = 10, -- Adjust in steps of 10
+    CurrentValue = 60, -- Default FPS cap
+    Flag = "FPSCapSlider",
+    Callback = function(Value)
+        FPSBooster:SetFPSCap(Value)
+    end
+})
+
+-- Red Light Green Light Feature
+local RedLightGreenLight = {}
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local toggles = {
+    autoPlayEnabled = false,
+    autoSpeedControl = true,
+    manualOverride = false,
+    reactionTime = 0 -- Reaction time in seconds (0 for instant reaction)
+}
+
+local greenLight = true -- Current light state (true = green, false = red)
+local defaultWalkSpeed = 16 -- Default Roblox walk speed
+
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- Helper: Change Movement State
+local function changeMovementState(canMove)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("Humanoid") then return end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    if canMove then
+        humanoid.WalkSpeed = defaultWalkSpeed
+    else
+        humanoid.WalkSpeed = 0 -- Stop movement
+    end
+end
+
+-- Function to Monitor Light Changes
+function RedLightGreenLight:MonitorLights()
+    RunService.Heartbeat:Connect(function()
+        if not toggles.autoPlayEnabled then return end
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("Humanoid") then return end
+
+        -- Auto Stop/Go Logic
+        if not greenLight then
+            changeMovementState(false) -- Stop during red light
+        else
+            if toggles.manualOverride then return end -- Skip if manual override is enabled
+            changeMovementState(true) -- Move during green light
+        end
+    end)
+end
+
+-- Function to Simulate Light Changes (for games where light events aren’t accessible)
+function RedLightGreenLight:SimulateLights()
+    while toggles.autoPlayEnabled do
+        greenLight = not greenLight -- Toggle light state
+        notify("Light State", "The light is now " .. (greenLight and "Green!" or "Red!"))
+        wait(math.random(3, 6)) -- Simulate random light durations
+    end
+end
+
+-- Toggle Auto Play
+function RedLightGreenLight:ToggleAutoPlay(state)
+    toggles.autoPlayEnabled = state
+    if state then
+        notify("Red Light Green Light", "Auto Play enabled!")
+        changeMovementState(true) -- Start in green light state
+        self:SimulateLights() -- Start simulating lights (if needed)
+    else
+        notify("Red Light Green Light", "Auto Play disabled!")
+        changeMovementState(true) -- Reset movement
+    end
+end
+
+-- Add Reaction Time
+function RedLightGreenLight:SetReactionTime(delay)
+    toggles.reactionTime = delay
+    notify("Reaction Time", "Reaction time set to " .. delay .. " seconds.")
+end
+
+-- Enable/Disable Speed Control
+function RedLightGreenLight:ToggleSpeedControl(state)
+    toggles.autoSpeedControl = state
+    notify("Speed Control", "Speed Control " .. (state and "enabled." or "disabled."))
+end
+
+-- Manual Override Toggle
+function RedLightGreenLight:ToggleManualOverride(state)
+    toggles.manualOverride = state
+    notify("Manual Override", "Manual Override " .. (state and "enabled." or "disabled."))
+end
+
+-- Enable Auto Play Toggle
+MainTab:CreateToggle({
+    Name = "Enable Auto Play",
+    CurrentValue = false,
+    Flag = "AutoPlayToggle",
+    Callback = function(Value)
+        RedLightGreenLight:ToggleAutoPlay(Value)
+    end
+})
+
+-- Reaction Time Slider
+MainTab:CreateSlider({
+    Name = "Reaction Time",
+    Range = {0, 1}, -- 0 for instant reaction, 1 for delayed reaction
+    Increment = 0.1,
+    CurrentValue = 0,
+    Flag = "ReactionTimeSlider",
+    Callback = function(Value)
+        RedLightGreenLight:SetReactionTime(Value)
+    end
+})
+
+-- Speed Control Toggle
+MainTab:CreateToggle({
+    Name = "Enable Speed Control",
+    CurrentValue = true,
+    Flag = "SpeedControlToggle",
+    Callback = function(Value)
+        RedLightGreenLight:ToggleSpeedControl(Value)
+    end
+})
+
+-- Manual Override Toggle
+MainTab:CreateToggle({
+    Name = "Enable Manual Override",
+    CurrentValue = false,
+    Flag = "ManualOverrideToggle",
+    Callback = function(Value)
+        RedLightGreenLight:ToggleManualOverride(Value)
+    end
+})
+
+-- Anti-Cheat Bypass Movement Features
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local movementSettings = {
+    speedEnabled = false,
+    jumpEnabled = false,
+    infiniteJumpEnabled = false,
+    customSpeed = 16,
+    customJump = 50
+}
+
+-- Helper: Apply Speed Using BodyVelocity
+local function applyCustomSpeed()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+    local rootPart = character.HumanoidRootPart
+    local bodyVelocity = rootPart:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(1e5, 0, 1e5) -- Allow movement in the XZ plane
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0) -- Default velocity
+    bodyVelocity.P = 1e4 -- Power of the velocity force
+    bodyVelocity.Parent = rootPart
+
+    RunService.Stepped:Connect(function()
+        if movementSettings.speedEnabled then
+            local moveDirection = LocalPlayer:GetMouse().Hit.LookVector
+            bodyVelocity.Velocity = moveDirection * movementSettings.customSpeed
+        else
+            bodyVelocity.Velocity = Vector3.zero -- Stop movement when disabled
+        end
+    end)
+end
+
+-- Helper: Apply Jump Using BodyVelocity
+local function applyCustomJump()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+    local rootPart = character.HumanoidRootPart
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(0, 1e5, 0) -- Allow vertical movement only
+    bodyVelocity.Velocity = Vector3.new(0, movementSettings.customJump, 0)
+    bodyVelocity.P = 1e4 -- Power of the velocity force
+    bodyVelocity.Parent = rootPart
+
+    -- Cleanup after jump
+    task.delay(0.3, function()
+        bodyVelocity:Destroy()
+    end)
+end
+
+-- Infinite Jump Logic
+UserInputService.JumpRequest:Connect(function()
+    if movementSettings.infiniteJumpEnabled then
+        applyCustomJump()
+    end
+end)
+
+-- Speed Toggle
+MovementTab:CreateToggle({
+    Name = "Enable Custom Speed",
+    CurrentValue = false,
+    Flag = "SpeedToggle",
+    Callback = function(Value)
+        movementSettings.speedEnabled = Value
+        if Value then
+            applyCustomSpeed()
+        else
+            notify("Custom Speed", "Custom Speed disabled.")
+        end
+    end
+})
+
+-- Speed Slider
+MovementTab:CreateSlider({
+    Name = "Custom Speed",
+    Range = {16, 200}, -- Default speed range
+    Increment = 5,
+    CurrentValue = 16,
+    Flag = "SpeedSlider",
+    Callback = function(Value)
+        movementSettings.customSpeed = Value
+        notify("Custom Speed", "Custom Speed set to " .. Value .. ".")
+    end
+})
+
+-- Jump Boost Toggle
+MovementTab:CreateToggle({
+    Name = "Enable Jump Boost",
+    CurrentValue = false,
+    Flag = "JumpToggle",
+    Callback = function(Value)
+        movementSettings.jumpEnabled = Value
+        notify("Jump Boost", "Jump Boost " .. (Value and "enabled." or "disabled."))
+    end
+})
+
+-- Jump Boost Slider
+MovementTab:CreateSlider({
+    Name = "Custom Jump Power",
+    Range = {50, 500}, -- Default jump power range
+    Increment = 10,
+    CurrentValue = 50,
+    Flag = "JumpSlider",
+    Callback = function(Value)
+        movementSettings.customJump = Value
+        notify("Custom Jump", "Custom Jump Power set to " .. Value .. ".")
+    end
+})
+
+-- Infinite Jump Toggle
+MovementTab:CreateToggle({
+    Name = "Enable Infinite Jump",
+    CurrentValue = false,
+    Flag = "InfiniteJumpToggle",
+    Callback = function(Value)
+        movementSettings.infiniteJumpEnabled = Value
+        notify("Infinite Jump", "Infinite Jump " .. (Value and "enabled." or "disabled."))
+    end
+})
+
+-- Auto Re-Execute Script After Teleport
+
+-- Services
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Script to Queue (Replace with your code)
+local function executeMyScript()
+    -- Example: Replace this with your script
+    loadstring(game:HttpGet("https://example.com/myscript.lua"))()
+end
+
+-- Save Script to Queue for Teleport
+TeleportService.TeleportInitFailed:Connect(function(_, result)
+    if result == Enum.TeleportResult.Failed then
+        print("[Teleport Queue] Teleport failed. No re-execution needed.")
+    end
+end)
+
+-- Automatically Queue Execution
+if syn and syn.queue_on_teleport then
+    -- For Synapse X
+    syn.queue_on_teleport("loadstring(game:HttpGet('https://example.com/myscript.lua'))()")
+    print("[Teleport Queue] Script queued for teleport.")
+elseif queue_on_teleport then
+    -- For Script-Ware or similar executors
+    queue_on_teleport("loadstring(game:HttpGet('https://example.com/myscript.lua'))()")
+    print("[Teleport Queue] Script queued for teleport.")
+else
+    warn("[Teleport Queue] Your executor does not support queue_on_teleport.")
+end
+
+-- Initial Script Execution
+executeMyScript()

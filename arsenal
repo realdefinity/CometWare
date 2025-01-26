@@ -29,6 +29,22 @@ local modules = {
     SilentAim = "https://raw.githubusercontent.com/realdefinity/comet/refs/heads/arsenal/SilentAim.lua"
 }
 
+-- 🛠️ Custom Functions (UNC and SUNC)
+local function UNC(func, ...)
+    task.spawn(func, ...)
+end
+
+local function SUNC(func, ...)
+    local bindable = Instance.new("BindableEvent")
+    local result
+    UNC(function(...)
+        result = {func(...)}
+        bindable:Fire()
+    end, ...)
+    bindable.Event:Wait()
+    return unpack(result)
+end
+
 -- 🛠️ Function to Download and Load Modules
 local function downloadModule(name, url)
     local filePath = folderPath .. "/" .. name .. ".lua"
@@ -42,31 +58,36 @@ local function downloadModule(name, url)
 end
 
 -- 📥 Download and Load Modules
-local AutoShoot = downloadModule("AutoShoot", modules.AutoShoot)
-local ESP = downloadModule("ESP", modules.ESP)
-local SilentAim = downloadModule("SilentAim", modules.SilentAim)
+local AutoShoot = SUNC(downloadModule, "AutoShoot", modules.AutoShoot)
+local ESP = SUNC(downloadModule, "ESP", modules.ESP)
+local SilentAim = SUNC(downloadModule, "SilentAim", modules.SilentAim)
 
--- 🛠️ Set up UI for each feature
-ESP:SetupUI(MainTab)         -- Set up ESP controls in the UI
-SilentAim:SetupUI(MainTab)   -- Set up Silent Aim controls in the UI
-AutoShoot:SetupUI(MainTab)   -- Set up Auto Shoot controls in the UI
+-- 🛠️ Improved Integration and Execution
+UNC(function()
+    -- ESP Integration
+    ESP:SetupUI(MainTab)
+    ESP:Run()
 
--- 🚀 Run the features
-ESP:Run()                    -- Start ESP functionality
-SilentAim:Run()              -- Start Silent Aim functionality
-AutoShoot:Run(SilentAim.getClosestTarget) -- Pass Silent Aim's target detection function to Auto Shoot
+    -- Silent Aim Integration
+    SilentAim:SetupUI(MainTab)
+    SilentAim:Run()
 
--- Notify when all modules are loaded
-Rayfield:Notify({
-    Title = "Comet Modules Loaded",
-    Content = "ESP, Silent Aim, and Auto Shoot are ready to use!",
-    Duration = 5,
-    Actions = {
-        Ignore = {
-            Name = "Okay",
-            Callback = function()
-                print("Comet modules loaded successfully!")
-            end
+    -- Auto Shoot Integration (Passing Silent Aim's getClosestTarget)
+    AutoShoot:SetupUI(MainTab)
+    AutoShoot:Run(SilentAim.getClosestTarget)
+
+    -- Notify user that all modules are loaded
+    Rayfield:Notify({
+        Title = "Comet Modules Loaded",
+        Content = "ESP, Silent Aim, and Auto Shoot are fully operational!",
+        Duration = 5,
+        Actions = {
+            Ignore = {
+                Name = "Okay",
+                Callback = function()
+                    print("All modules loaded successfully!")
+                end
+            }
         }
-    }
-})
+    })
+end)

@@ -8,15 +8,21 @@ local UserInputService = game:GetService("UserInputService")
 -- Variables
 local SilentAimEnabled = false
 local FOV = 300
-local TargetPart = "Head" -- The part of the enemy to hit (e.g., "Head" or "HumanoidRootPart")
+local TargetPart = "Head" -- Part of the enemy to hit (e.g., "Head", "HumanoidRootPart")
 local FOVCircle = Drawing.new("Circle")
+local CurrentTarget = nil
 
 -- FOV Circle Settings
 FOVCircle.Visible = false
 FOVCircle.Radius = FOV
 FOVCircle.Thickness = 2
-FOVCircle.Color = Color3.fromRGB(0, 255, 0) -- Default color: green
+FOVCircle.Color = Color3.fromRGB(255, 0, 0) -- Default color: red
 FOVCircle.Transparency = 1
+
+-- Helper: Debugging Messages
+local function debug(message)
+    print("[Silent Aim Debug]: " .. message)
+end
 
 -- Function to find the closest target within the FOV
 local function getClosestTarget()
@@ -34,7 +40,8 @@ local function getClosestTarget()
                     local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
 
                     if distance < shortestDistance then
-                        closestTarget, shortestDistance = targetPart, distance
+                        closestTarget = targetPart
+                        shortestDistance = distance
                     end
                 end
             end
@@ -43,32 +50,45 @@ local function getClosestTarget()
     return closestTarget
 end
 
--- Function to modify bullet trajectory for Silent Aim
-local function modifyBulletTrajectory()
+-- Function to calculate the direction for Silent Aim
+local function calculateAimDirection(target)
+    local targetPosition = target.Position
+    local cameraPosition = Camera.CFrame.Position
+    return (targetPosition - cameraPosition).Unit -- Unit vector for direction
+end
+
+-- Function to apply Silent Aim logic
+local function applySilentAim()
     if SilentAimEnabled then
-        local target = getClosestTarget()
-        if target then
-            -- Silent Aim magic: adjusting aim to hit target without moving the camera
-            local bulletDirection = (target.Position - Camera.CFrame.Position).Unit
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Camera.CFrame.Position + bulletDirection * 500)
+        CurrentTarget = getClosestTarget()
+        if CurrentTarget then
+            -- Modify the bullet trajectory or targeting direction
+            local aimDirection = calculateAimDirection(CurrentTarget)
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Camera.CFrame.Position + aimDirection * 500) -- Aim at target
+            debug("Target locked onto: " .. CurrentTarget.Parent.Name)
+        else
+            debug("No valid target found.")
         end
+    else
+        CurrentTarget = nil -- Reset target when Silent Aim is disabled
     end
 end
 
 -- UI Setup for Silent Aim
 function SilentAim:SetupUI(MainTab)
-    -- Toggle for Silent Aim
+    -- Toggle to enable/disable Silent Aim
     MainTab:CreateToggle({
         Name = "Enable Silent Aim",
         CurrentValue = false,
-        Flag = "Toggle2", -- Unique flag for Silent Aim
+        Flag = "Toggle2", -- Unique flag for Silent Aim toggle
         Callback = function(Value)
             SilentAimEnabled = Value
-            FOVCircle.Visible = Value -- Show/hide the FOV circle
+            FOVCircle.Visible = Value
+            debug("Silent Aim Enabled: " .. tostring(Value))
         end
     })
 
-    -- Slider to adjust FOV
+    -- Slider to adjust the Field of View (FOV)
     MainTab:CreateSlider({
         Name = "Field of View",
         Range = {100, 1000},
@@ -79,36 +99,36 @@ function SilentAim:SetupUI(MainTab)
         Callback = function(Value)
             FOV = Value
             FOVCircle.Radius = Value
+            debug("FOV updated to: " .. Value)
         end
     })
 
-    -- Color Picker for FOV Circle
+    -- Color picker for FOV Circle
     MainTab:CreateColorPicker({
         Name = "FOV Circle Color",
-        CurrentValue = Color3.fromRGB(0, 255, 0),
+        CurrentValue = FOVCircle.Color,
         Flag = "ColorPicker1", -- Unique flag for FOV circle color
         Callback = function(Value)
             FOVCircle.Color = Value
+            debug("FOV Circle Color updated.")
         end
     })
 end
 
--- Silent Aim Runtime Logic
+-- Runtime Logic for Silent Aim
 function SilentAim:Run()
-    -- Update the FOV Circle position
+    -- Update FOV Circle position and logic on every frame
     RunService.RenderStepped:Connect(function()
         if SilentAimEnabled then
             FOVCircle.Position = UserInputService:GetMouseLocation()
+            applySilentAim() -- Apply Silent Aim
         else
-            FOVCircle.Visible = false
+            FOVCircle.Visible = false -- Hide the FOV circle when disabled
         end
     end)
-
-    -- Adjust bullet trajectory to always hit the target
-    RunService.RenderStepped:Connect(modifyBulletTrajectory)
 end
 
--- Function to expose "getClosestTarget" for external use (e.g., Auto Shoot)
+-- Expose the closest target function for external use (e.g., Auto Shoot)
 function SilentAim:getClosestTarget()
     return getClosestTarget()
 end

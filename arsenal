@@ -14,7 +14,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Create Silent Aim Tab
-local SilentAimTab = Window:CreateTab("Silent Aim", 4483362458)
+local MainTab = Window:CreateTab("Arsenal", 4483362458)
 
 -- Services
 local Players = game:GetService("Players")
@@ -99,7 +99,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Rayfield UI: Silent Aim Toggle
-SilentAimTab:CreateToggle({
+MainTab:CreateToggle({
     Name = "Enable Silent Aim",
     CurrentValue = false,
     Flag = "Toggle1",
@@ -110,7 +110,7 @@ SilentAimTab:CreateToggle({
 })
 
 -- Rayfield UI: FOV Slider
-SilentAimTab:CreateSlider({
+MainTab:CreateSlider({
     Name = "Field of View",
     Range = {100, 1000},
     Increment = 10,
@@ -124,7 +124,7 @@ SilentAimTab:CreateSlider({
 })
 
 -- Rayfield UI: FOV Circle Color Picker
-SilentAimTab:CreateColorPicker({
+MainTab:CreateColorPicker({
     Name = "FOV Circle Color",
     CurrentValue = FOVCircle.Color,
     Flag = "ColorPicker1",
@@ -276,7 +276,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Rayfield Toggle for ESP
-PlayerTab:CreateToggle({
+MainTab:CreateToggle({
     Name = "Enable Skeleton ESP",
     CurrentValue = false,
     Flag = "Toggle2",

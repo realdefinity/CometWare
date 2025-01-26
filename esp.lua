@@ -7,21 +7,40 @@ local Camera = workspace.CurrentCamera
 -- Variables
 local ESPEnabled = false
 local activeESP = {}
-local ESPColor = Color3.fromRGB(0, 255, 255) -- Default color: cyan
-local ESPThickness = 2 -- Default line thickness
-local Transparency = 1 -- Fully visible
+local ESPColor = Color3.fromRGB(255, 0, 0) -- Default color: red
+local ESPThickness = 2 -- Default thickness
+local Transparency = 1 -- Line transparency
 
--- Helper: Create a single line for the ESP skeleton
+-- Helper: Debugging function (uses `debug` for cleaner logging)
+local function debug(message)
+    print("[ESP Debug]: " .. message)
+end
+
+-- Helper: Cache handling
+local cache = {}
+cache.iscached = function(name)
+    return activeESP[name] ~= nil
+end
+
+cache.invalidate = function(name)
+    if cache.iscached(name) then
+        activeESP[name] = nil
+        debug("Invalidated cache for player: " .. name)
+    end
+end
+
+-- Helper: Create a line for skeletons
 local function createLine()
     local line = Drawing.new("Line")
+    line.Color = ESPColor
     line.Thickness = ESPThickness
     line.Transparency = Transparency
-    line.Color = ESPColor
     return line
 end
 
--- Helper: Create a skeleton for a specific player
+-- Helper: Create skeleton lines for a player
 local function createSkeleton(player)
+    debug("Creating skeleton for player: " .. player.Name)
     local skeleton = {}
     local bodyParts = {
         "Head",
@@ -48,10 +67,13 @@ local function createSkeleton(player)
     return skeleton
 end
 
--- Helper: Update a player's skeleton
+-- Helper: Update the skeleton for a player
 local function updateSkeleton(player, skeleton)
     local character = player.Character
-    if not character then return end
+    if not character then
+        cache.invalidate(player.Name)
+        return
+    end
 
     local connections = {
         {character:FindFirstChild("Head"), character:FindFirstChild("UpperTorso")},
@@ -72,25 +94,23 @@ local function updateSkeleton(player, skeleton)
 
     for _, connection in ipairs(connections) do
         local part1, part2 = connection[1], connection[2]
-        local line = skeleton[part1 and part1.Name or ""]
-        if line and part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
+        if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
             local pos1, onScreen1 = Camera:WorldToViewportPoint(part1.Position)
             local pos2, onScreen2 = Camera:WorldToViewportPoint(part2.Position)
 
-            if onScreen1 and onScreen2 then
+            local line = skeleton[part1.Name]
+            if line and onScreen1 and onScreen2 then
                 line.Visible = true
                 line.From = Vector2.new(pos1.X, pos1.Y)
                 line.To = Vector2.new(pos2.X, pos2.Y)
-            else
+            elseif line then
                 line.Visible = false
             end
-        elseif line then
-            line.Visible = false
         end
     end
 end
 
--- Helper: Remove all ESP lines for a player
+-- Helper: Remove ESP for a player
 local function removeSkeleton(skeleton)
     for _, line in pairs(skeleton) do
         line:Remove()
@@ -102,19 +122,24 @@ function ESP:SetupUI(MainTab)
     MainTab:CreateToggle({
         Name = "Enable ESP",
         CurrentValue = false,
-        Flag = "Toggle1", -- Unique flag for ESP toggle
+        Flag = "ESP_Toggle",
         Callback = function(Value)
             ESPEnabled = Value
+            if not Value then
+                for _, skeleton in pairs(activeESP) do
+                    removeSkeleton(skeleton)
+                end
+                activeESP = {}
+            end
         end
     })
 
     MainTab:CreateColorPicker({
         Name = "ESP Color",
         CurrentValue = ESPColor,
-        Flag = "ColorPicker1", -- Unique flag for ESP color picker
+        Flag = "ESP_Color",
         Callback = function(Value)
             ESPColor = Value
-            -- Update existing lines to match the new color
             for _, skeleton in pairs(activeESP) do
                 for _, line in pairs(skeleton) do
                     line.Color = ESPColor
@@ -128,10 +153,9 @@ function ESP:SetupUI(MainTab)
         Range = {1, 5},
         Increment = 0.5,
         CurrentValue = ESPThickness,
-        Flag = "Slider1", -- Unique flag for ESP thickness slider
+        Flag = "ESP_Thickness",
         Callback = function(Value)
             ESPThickness = Value
-            -- Update existing lines to match the new thickness
             for _, skeleton in pairs(activeESP) do
                 for _, line in pairs(skeleton) do
                     line.Thickness = ESPThickness
@@ -143,31 +167,24 @@ end
 
 -- ESP Runtime Logic
 function ESP:Run()
-    -- Update ESP lines on every frame
     RunService.RenderStepped:Connect(function()
         if ESPEnabled then
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer and player.Team ~= Players.LocalPlayer.Team then
-                    if not activeESP[player] then
-                        activeESP[player] = createSkeleton(player)
+                    if not activeESP[player.Name] then
+                        activeESP[player.Name] = createSkeleton(player)
                     end
-                    updateSkeleton(player, activeESP[player])
+                    updateSkeleton(player, activeESP[player.Name])
                 end
-            end
-        else
-            -- Remove all ESP when disabled
-            for player, skeleton in pairs(activeESP) do
-                removeSkeleton(skeleton)
-                activeESP[player] = nil
             end
         end
     end)
 
-    -- Clean up ESP when a player leaves
+    -- Cleanup when players leave
     Players.PlayerRemoving:Connect(function(player)
-        if activeESP[player] then
-            removeSkeleton(activeESP[player])
-            activeESP[player] = nil
+        if activeESP[player.Name] then
+            removeSkeleton(activeESP[player.Name])
+            activeESP[player.Name] = nil
         end
     end)
 end

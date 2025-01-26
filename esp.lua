@@ -7,40 +7,28 @@ local Camera = workspace.CurrentCamera
 -- Variables
 local ESPEnabled = false
 local activeESP = {}
-local ESPColor = Color3.fromRGB(255, 0, 0) -- Default color: red
-local ESPThickness = 2 -- Default thickness
-local Transparency = 1 -- Line transparency
+local ESPColor = Color3.fromRGB(0, 255, 0) -- Default: Green
+local ESPThickness = 2
+local Transparency = 1
 
--- Helper: Debugging function (uses `debug` for cleaner logging)
-local function debug(message)
-    print("[ESP Debug]: " .. message)
+-- Debug Function for Logging
+local function debugLog(msg)
+    print("[ESP Debug]: " .. msg)
 end
 
--- Helper: Cache handling
-local cache = {}
-cache.iscached = function(name)
-    return activeESP[name] ~= nil
-end
-
-cache.invalidate = function(name)
-    if cache.iscached(name) then
-        activeESP[name] = nil
-        debug("Invalidated cache for player: " .. name)
-    end
-end
-
--- Helper: Create a line for skeletons
+-- Helper: Create a Line
 local function createLine()
     local line = Drawing.new("Line")
+    line.Visible = false
     line.Color = ESPColor
     line.Thickness = ESPThickness
     line.Transparency = Transparency
     return line
 end
 
--- Helper: Create skeleton lines for a player
+-- Helper: Create Skeleton Lines for a Player
 local function createSkeleton(player)
-    debug("Creating skeleton for player: " .. player.Name)
+    debugLog("Creating skeleton for player: " .. player.Name)
     local skeleton = {}
     local bodyParts = {
         "Head",
@@ -67,13 +55,10 @@ local function createSkeleton(player)
     return skeleton
 end
 
--- Helper: Update the skeleton for a player
+-- Helper: Update Skeleton for a Player
 local function updateSkeleton(player, skeleton)
     local character = player.Character
-    if not character then
-        cache.invalidate(player.Name)
-        return
-    end
+    if not character then return end
 
     local connections = {
         {character:FindFirstChild("Head"), character:FindFirstChild("UpperTorso")},
@@ -110,8 +95,9 @@ local function updateSkeleton(player, skeleton)
     end
 end
 
--- Helper: Remove ESP for a player
+-- Helper: Remove ESP for a Player
 local function removeSkeleton(skeleton)
+    debugLog("Removing skeleton...")
     for _, line in pairs(skeleton) do
         line:Remove()
     end
@@ -171,23 +157,22 @@ function ESP:Run()
         if ESPEnabled then
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer and player.Team ~= Players.LocalPlayer.Team then
-                    if not activeESP[player.Name] then
-                        activeESP[player.Name] = createSkeleton(player)
+                    if not activeESP[player] then
+                        activeESP[player] = createSkeleton(player)
                     end
-                    updateSkeleton(player, activeESP[player.Name])
+                    updateSkeleton(player, activeESP[player])
                 end
             end
         end
     end)
 
-    -- Cleanup when players leave
+    -- Cleanup ESP when players leave
     Players.PlayerRemoving:Connect(function(player)
-        if activeESP[player.Name] then
-            removeSkeleton(activeESP[player.Name])
-            activeESP[player.Name] = nil
+        if activeESP[player] then
+            removeSkeleton(activeESP[player])
+            activeESP[player] = nil
         end
     end)
 end
 
 return ESP
--- crer34342

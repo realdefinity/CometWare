@@ -168,15 +168,10 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- Variables
-local toggles = {
-    autoPlayEnabled = false,
-    autoSpeedControl = true,
-    manualOverride = false,
-    reactionTime = 0 -- Reaction time in seconds (0 for instant reaction)
-}
-
-local greenLight = true -- Current light state (true = green, false = red)
-local defaultWalkSpeed = 16 -- Default Roblox walk speed
+local reactionTime = 0 -- Reaction time in seconds
+local defaultWalkSpeed = 16 -- Default walk speed
+local isGreenLight = true -- Current light state
+local lightDetectionMethod = "signal" -- Options: "signal" or "timer"
 
 -- Helper: Notify Function
 local function notify(title, content)
@@ -206,104 +201,75 @@ local function changeMovementState(canMove)
     end
 end
 
--- Function to Monitor Light Changes
-function RedLightGreenLight:MonitorLights()
+-- Light Detection Logic
+function RedLightGreenLight:DetectLights()
+    if lightDetectionMethod == "signal" then
+        -- Example detection (replace with actual game logic if applicable)
+        local lightText = game:GetService("Workspace"):FindFirstChild("LightIndicator") -- Example object
+        if lightText and lightText:IsA("TextLabel") then
+            isGreenLight = lightText.Text == "Green Light"
+        end
+    elseif lightDetectionMethod == "timer" then
+        -- Fallback to timed simulation if no light signals are available
+        task.spawn(function()
+            while true do
+                isGreenLight = not isGreenLight -- Toggle light state
+                notify("Light State", "The light is now " .. (isGreenLight and "Green!" or "Red!"))
+                task.wait(math.random(3, 6)) -- Random green/red durations
+            end
+        end)
+    end
+end
+
+-- Movement Control Logic
+function RedLightGreenLight:ControlMovement()
     RunService.Heartbeat:Connect(function()
-        if not toggles.autoPlayEnabled then return end
         local character = LocalPlayer.Character
         if not character or not character:FindFirstChild("Humanoid") then return end
 
-        -- Auto Stop/Go Logic
-        if not greenLight then
-            changeMovementState(false) -- Stop during red light
+        -- Reaction delay
+        task.wait(reactionTime)
+
+        -- Control movement based on light state
+        if isGreenLight then
+            changeMovementState(true) -- Allow movement
         else
-            if toggles.manualOverride then return end -- Skip if manual override is enabled
-            changeMovementState(true) -- Move during green light
+            changeMovementState(false) -- Stop movement
         end
     end)
 end
 
--- Function to Simulate Light Changes (for games where light events aren’t accessible)
-function RedLightGreenLight:SimulateLights()
-    while toggles.autoPlayEnabled do
-        greenLight = not greenLight -- Toggle light state
-        notify("Light State", "The light is now " .. (greenLight and "Green!" or "Red!"))
-        wait(math.random(3, 6)) -- Simulate random light durations
-    end
+-- Initialize Feature
+function RedLightGreenLight:Start()
+    notify("Red Light Green Light", "Auto Play enabled!")
+    self:DetectLights() -- Start light detection
+    self:ControlMovement() -- Control player movement
 end
 
--- Toggle Auto Play
-function RedLightGreenLight:ToggleAutoPlay(state)
-    toggles.autoPlayEnabled = state
-    if state then
-        notify("Red Light Green Light", "Auto Play enabled!")
-        changeMovementState(true) -- Start in green light state
-        self:SimulateLights() -- Start simulating lights (if needed)
-    else
-        notify("Red Light Green Light", "Auto Play disabled!")
-        changeMovementState(true) -- Reset movement
-    end
-end
+-- UI Integration
+local MainTab = Window:CreateTab("Red Light Green Light", 4483362458)
 
--- Add Reaction Time
-function RedLightGreenLight:SetReactionTime(delay)
-    toggles.reactionTime = delay
-    notify("Reaction Time", "Reaction time set to " .. delay .. " seconds.")
-end
-
--- Enable/Disable Speed Control
-function RedLightGreenLight:ToggleSpeedControl(state)
-    toggles.autoSpeedControl = state
-    notify("Speed Control", "Speed Control " .. (state and "enabled." or "disabled."))
-end
-
--- Manual Override Toggle
-function RedLightGreenLight:ToggleManualOverride(state)
-    toggles.manualOverride = state
-    notify("Manual Override", "Manual Override " .. (state and "enabled." or "disabled."))
-end
-
--- Enable Auto Play Toggle
-MainTab:CreateToggle({
-    Name = "Enable Auto Play",
-    CurrentValue = false,
-    Flag = "AutoPlayToggle",
-    Callback = function(Value)
-        RedLightGreenLight:ToggleAutoPlay(Value)
+-- Enable Auto Play
+MainTab:CreateButton({
+    Name = "Start Red Light Green Light",
+    Callback = function()
+        RedLightGreenLight:Start()
     end
 })
 
 -- Reaction Time Slider
 MainTab:CreateSlider({
     Name = "Reaction Time",
-    Range = {0, 1}, -- 0 for instant reaction, 1 for delayed reaction
+    Range = {0, 1}, -- 0 for instant reaction, up to 1 second
     Increment = 0.1,
     CurrentValue = 0,
     Flag = "ReactionTimeSlider",
     Callback = function(Value)
-        RedLightGreenLight:SetReactionTime(Value)
+        reactionTime = Value
+        notify("Reaction Time", "Reaction time set to " .. Value .. " seconds.")
     end
 })
 
--- Speed Control Toggle
-MainTab:CreateToggle({
-    Name = "Enable Speed Control",
-    CurrentValue = true,
-    Flag = "SpeedControlToggle",
-    Callback = function(Value)
-        RedLightGreenLight:ToggleSpeedControl(Value)
-    end
-})
-
--- Manual Override Toggle
-MainTab:CreateToggle({
-    Name = "Enable Manual Override",
-    CurrentValue = false,
-    Flag = "ManualOverrideToggle",
-    Callback = function(Value)
-        RedLightGreenLight:ToggleManualOverride(Value)
-    end
-})
 
 -- Services
 local Players = game:GetService("Players")
@@ -429,9 +395,6 @@ local function applyCustomJump()
         end
     end)
 end
-
--- UI Integration
-local MovementTab = Window:CreateTab("Anti-Cheat Movement", 4483362458)
 
 -- Toggle Custom Jump Power
 MovementTab:CreateToggle({

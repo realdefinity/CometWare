@@ -452,12 +452,11 @@ end)
 
 -- Automatically Queue Execution
 if syn and syn.queue_on_teleport then
-    -- For Synapse X
-    syn.queue_on_teleport("loadstring(game:HttpGet('https://example.com/myscript.lua'))()")
+    syn.queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game'))()")
     print("[Teleport Queue] Script queued for teleport.")
 elseif queue_on_teleport then
     -- For Script-Ware or similar executors
-    queue_on_teleport("loadstring(game:HttpGet('https://example.com/myscript.lua'))()")
+    queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game'))()")
     print("[Teleport Queue] Script queued for teleport.")
 else
     warn("[Teleport Queue] Your executor does not support queue_on_teleport.")

@@ -458,3 +458,86 @@ else
     print("[Queue-on-Teleport] Script is already queued. Avoiding duplicate execution.")
 end
 
+-- Auto Cookie Cutter Feature
+local CookieCutter = {}
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Variables
+local cuttingEnabled = false
+local cuttingSpeed = 0.02 -- Adjust this for smoother or faster cuts
+
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- Helper: Move Mouse to a Position
+local function moveMouseTo(position)
+    mousemoveabs(position.X, position.Y)
+end
+
+-- Helper: Simulate Mouse Press
+local function clickMouse()
+    mouse1press()
+    task.wait(0.1)
+    mouse1release()
+end
+
+-- Function to Cut Cookie Shape
+function CookieCutter:CutCookie(cookieShape)
+    if not cuttingEnabled then return end
+
+    -- Simulate cutting along the shape's edges
+    for i = 1, #cookieShape do
+        local currentPoint = cookieShape[i]
+        moveMouseTo(currentPoint) -- Move mouse to the current point
+        clickMouse() -- Simulate a cut
+        task.wait(cuttingSpeed) -- Smooth out the cut speed
+    end
+
+    notify("Cookie Cutter", "Shape cut perfectly!")
+end
+
+-- UI Integration
+local MainTab = Window:CreateTab("Cookie Cutter", 4483362458)
+
+-- Enable Auto Cut Toggle
+MainTab:CreateToggle({
+    Name = "Enable Auto Cookie Cutter",
+    CurrentValue = false,
+    Flag = "AutoCutToggle",
+    Callback = function(Value)
+        cuttingEnabled = Value
+        if Value then
+            notify("Cookie Cutter", "Auto Cookie Cutter enabled! Waiting for shape...")
+        else
+            notify("Cookie Cutter", "Auto Cookie Cutter disabled.")
+        end
+    end
+})
+
+-- Cut Speed Slider
+MainTab:CreateSlider({
+    Name = "Cutting Speed",
+    Range = {0.01, 0.1}, -- Min/max cutting speed
+    Increment = 0.01,
+    CurrentValue = cuttingSpeed,
+    Flag = "CutSpeedSlider",
+    Callback = function(Value)
+        cuttingSpeed = Value
+        notify("Cookie Cutter", "Cutting speed set to " .. Value)
+    end
+})

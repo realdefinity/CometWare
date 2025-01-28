@@ -305,75 +305,96 @@ MainTab:CreateToggle({
     end
 })
 
--- Anti-Cheat Bypass Movement Features
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Variables
-local movementSettings = {
-    speedEnabled = false,
-    jumpEnabled = false,
+local toggles = {
     infiniteJumpEnabled = false,
-    customSpeed = 16,
-    customJump = 50
+    customSpeedEnabled = false
 }
+local defaultSpeed = 16 -- Default Roblox speed
+local customSpeed = 50 -- Default custom speed
+local jumpPower = 50 -- Custom jump height
 
--- Helper: Apply Speed Using BodyVelocity
+-- 🛠 Anti-Cheat Friendly Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if toggles.infiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = LocalPlayer.Character.HumanoidRootPart
+        local jumpVelocity = Instance.new("BodyVelocity")
+        jumpVelocity.MaxForce = Vector3.new(0, 1e5, 0) -- Only allow upward movement
+        jumpVelocity.Velocity = Vector3.new(0, jumpPower, 0) -- Apply jump power
+        jumpVelocity.P = 1e4 -- Power of the jump
+        jumpVelocity.Parent = rootPart
+
+        -- Remove BodyVelocity after jump
+        task.delay(0.2, function()
+            jumpVelocity:Destroy()
+        end)
+    end
+end)
+
+-- 🛠 Anti-Cheat Friendly Custom Speed
 local function applyCustomSpeed()
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-
-    local rootPart = character.HumanoidRootPart
-    local bodyVelocity = rootPart:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(1e5, 0, 1e5) -- Allow movement in the XZ plane
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0) -- Default velocity
-    bodyVelocity.P = 1e4 -- Power of the velocity force
-    bodyVelocity.Parent = rootPart
-
-    RunService.Stepped:Connect(function()
-        if movementSettings.speedEnabled then
-            local moveDirection = LocalPlayer:GetMouse().Hit.LookVector
-            bodyVelocity.Velocity = moveDirection * movementSettings.customSpeed
-        else
-            bodyVelocity.Velocity = Vector3.zero -- Stop movement when disabled
-        end
-    end)
-end
-
--- Helper: Apply Jump Using BodyVelocity
-local function applyCustomJump()
+    if not toggles.customSpeedEnabled then return end
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
 
     local rootPart = character.HumanoidRootPart
     local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(0, 1e5, 0) -- Allow vertical movement only
-    bodyVelocity.Velocity = Vector3.new(0, movementSettings.customJump, 0)
+    bodyVelocity.MaxForce = Vector3.new(1e5, 0, 1e5) -- Only allow horizontal movement
     bodyVelocity.P = 1e4 -- Power of the velocity force
+    bodyVelocity.Velocity = Vector3.zero -- Default velocity
     bodyVelocity.Parent = rootPart
 
-    -- Cleanup after jump
-    task.delay(0.3, function()
+    -- Update velocity based on input
+    RunService.Stepped:Connect(function()
+        if toggles.customSpeedEnabled and LocalPlayer.Character then
+            local moveDirection = Vector3.zero
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                moveDirection = humanoid.MoveDirection
+            end
+
+            bodyVelocity.Velocity = moveDirection * customSpeed
+        else
+            bodyVelocity.Velocity = Vector3.zero -- Stop movement when disabled
+        end
+    end)
+
+    -- Cleanup when disabled
+    task.spawn(function()
+        while toggles.customSpeedEnabled do
+            task.wait(0.1)
+        end
         bodyVelocity:Destroy()
     end)
 end
 
--- Infinite Jump Logic
-UserInputService.JumpRequest:Connect(function()
-    if movementSettings.infiniteJumpEnabled then
-        applyCustomJump()
-    end
-end)
+-- UI Integration
+local MovementTab = Window:CreateTab("Anti-Cheat Movement", 4483362458)
 
--- Speed Toggle
+-- Toggle Infinite Jump
+MovementTab:CreateToggle({
+    Name = "Enable Infinite Jump",
+    CurrentValue = false,
+    Flag = "InfiniteJumpToggle",
+    Callback = function(Value)
+        toggles.infiniteJumpEnabled = Value
+        notify("Infinite Jump", "Infinite Jump " .. (Value and "enabled." or "disabled."))
+    end
+})
+
+-- Toggle Custom Speed
 MovementTab:CreateToggle({
     Name = "Enable Custom Speed",
     CurrentValue = false,
-    Flag = "SpeedToggle",
+    Flag = "CustomSpeedToggle",
     Callback = function(Value)
-        movementSettings.speedEnabled = Value
+        toggles.customSpeedEnabled = Value
         if Value then
             applyCustomSpeed()
         else
@@ -384,51 +405,30 @@ MovementTab:CreateToggle({
 
 -- Speed Slider
 MovementTab:CreateSlider({
-    Name = "Custom Speed",
-    Range = {16, 200}, -- Default speed range
+    Name = "Set Custom Speed",
+    Range = {16, 150}, -- Adjust based on game limits
     Increment = 5,
-    CurrentValue = 16,
-    Flag = "SpeedSlider",
+    CurrentValue = 50,
+    Flag = "CustomSpeedSlider",
     Callback = function(Value)
-        movementSettings.customSpeed = Value
-        notify("Custom Speed", "Custom Speed set to " .. Value .. ".")
+        customSpeed = Value
+        notify("Custom Speed", "Speed set to " .. Value .. ".")
     end
 })
 
--- Jump Boost Toggle
-MovementTab:CreateToggle({
-    Name = "Enable Jump Boost",
-    CurrentValue = false,
-    Flag = "JumpToggle",
-    Callback = function(Value)
-        movementSettings.jumpEnabled = Value
-        notify("Jump Boost", "Jump Boost " .. (Value and "enabled." or "disabled."))
-    end
-})
-
--- Jump Boost Slider
+-- Jump Height Slider
 MovementTab:CreateSlider({
-    Name = "Custom Jump Power",
-    Range = {50, 500}, -- Default jump power range
+    Name = "Set Jump Power",
+    Range = {50, 300}, -- Adjust based on game limits
     Increment = 10,
     CurrentValue = 50,
-    Flag = "JumpSlider",
+    Flag = "JumpPowerSlider",
     Callback = function(Value)
-        movementSettings.customJump = Value
-        notify("Custom Jump", "Custom Jump Power set to " .. Value .. ".")
+        jumpPower = Value
+        notify("Jump Power", "Jump power set to " .. Value .. ".")
     end
 })
 
--- Infinite Jump Toggle
-MovementTab:CreateToggle({
-    Name = "Enable Infinite Jump",
-    CurrentValue = false,
-    Flag = "InfiniteJumpToggle",
-    Callback = function(Value)
-        movementSettings.infiniteJumpEnabled = Value
-        notify("Infinite Jump", "Infinite Jump " .. (Value and "enabled." or "disabled."))
-    end
-})
 
 -- Auto Re-Execute Script After Teleport
 

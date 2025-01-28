@@ -541,3 +541,97 @@ MainTab:CreateSlider({
         notify("Cookie Cutter", "Cutting speed set to " .. Value)
     end
 })
+
+-- No-Death Feature
+local NoDeath = {}
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local toggles = {
+    noDeathEnabled = false
+}
+
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- 🛡️ Health Freeze/Restore
+local function freezeHealth()
+    RunService.Heartbeat:Connect(function()
+        if toggles.noDeathEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+
+            -- Freeze health
+            humanoid.Health = humanoid.MaxHealth
+
+            -- Randomize slight health variation to avoid anti-cheat flags
+            if math.random(1, 10) > 8 then
+                humanoid.Health = humanoid.Health - 0.01
+            end
+        end
+    end)
+end
+
+-- 🛡️ Damage Blocker
+local function blockDamage()
+    if not toggles.noDeathEnabled then return end
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("Humanoid") then return end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+        if toggles.noDeathEnabled and humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = humanoid.MaxHealth
+            notify("No Death", "Blocked incoming damage!")
+        end
+    end)
+end
+
+-- 🛡️ Respawn Prevention
+local function preventRespawnDeath()
+    LocalPlayer.CharacterRemoving:Connect(function()
+        if toggles.noDeathEnabled then
+            notify("No Death", "Respawning immediately!")
+            LocalPlayer:LoadCharacter()
+        end
+    end)
+end
+
+-- Initialize Anti-Death Feature
+function NoDeath:Start()
+    notify("No Death", "No Death mode enabled!")
+    freezeHealth()
+    blockDamage()
+    preventRespawnDeath()
+end
+
+-- UI Integration
+local MainTab = Window:CreateTab("No Death", 4483362458)
+
+-- Enable No Death Toggle
+MainTab:CreateToggle({
+    Name = "Enable No Death",
+    CurrentValue = false,
+    Flag = "NoDeathToggle",
+    Callback = function(Value)
+        toggles.noDeathEnabled = Value
+        if Value then
+            NoDeath:Start()
+        else
+            notify("No Death", "No Death mode disabled.")
+        end
+    end
+})

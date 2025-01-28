@@ -308,85 +308,53 @@ MainTab:CreateToggle({
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local toggles = {
-    infiniteJumpEnabled = false,
     customSpeedEnabled = false
 }
-local defaultSpeed = 16 -- Default Roblox speed
-local customSpeed = 50 -- Default custom speed
-local jumpPower = 50 -- Custom jump height
+local customSpeed = 16 -- Default speed
 
--- 🛠 Anti-Cheat Friendly Infinite Jump
-UserInputService.JumpRequest:Connect(function()
-    if toggles.infiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local rootPart = LocalPlayer.Character.HumanoidRootPart
-        local jumpVelocity = Instance.new("BodyVelocity")
-        jumpVelocity.MaxForce = Vector3.new(0, 1e5, 0) -- Only allow upward movement
-        jumpVelocity.Velocity = Vector3.new(0, jumpPower, 0) -- Apply jump power
-        jumpVelocity.P = 1e4 -- Power of the jump
-        jumpVelocity.Parent = rootPart
-
-        -- Remove BodyVelocity after jump
-        task.delay(0.2, function()
-            jumpVelocity:Destroy()
-        end)
-    end
-end)
-
--- 🛠 Anti-Cheat Friendly Custom Speed
-local function applyCustomSpeed()
-    if not toggles.customSpeedEnabled then return end
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-
-    local rootPart = character.HumanoidRootPart
-    local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(1e5, 0, 1e5) -- Only allow horizontal movement
-    bodyVelocity.P = 1e4 -- Power of the velocity force
-    bodyVelocity.Velocity = Vector3.zero -- Default velocity
-    bodyVelocity.Parent = rootPart
-
-    -- Update velocity based on input
-    RunService.Stepped:Connect(function()
-        if toggles.customSpeedEnabled and LocalPlayer.Character then
-            local moveDirection = Vector3.zero
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                moveDirection = humanoid.MoveDirection
-            end
-
-            bodyVelocity.Velocity = moveDirection * customSpeed
-        else
-            bodyVelocity.Velocity = Vector3.zero -- Stop movement when disabled
-        end
-    end)
-
-    -- Cleanup when disabled
-    task.spawn(function()
-        while toggles.customSpeedEnabled do
-            task.wait(0.1)
-        end
-        bodyVelocity:Destroy()
-    end)
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
 end
 
--- UI Integration
-local MovementTab = Window:CreateTab("Anti-Cheat Movement", 4483362458)
-
--- Toggle Infinite Jump
-MovementTab:CreateToggle({
-    Name = "Enable Infinite Jump",
-    CurrentValue = false,
-    Flag = "InfiniteJumpToggle",
-    Callback = function(Value)
-        toggles.infiniteJumpEnabled = Value
-        notify("Infinite Jump", "Infinite Jump " .. (Value and "enabled." or "disabled."))
+-- Anti-Cheat Friendly Custom Speed (CFrame Stepping)
+local function applyCustomSpeed()
+    if toggles.customSpeedEnabled then
+        notify("Custom Speed", "Custom Speed enabled! Moving safely...")
+    else
+        notify("Custom Speed", "Custom Speed disabled.")
+        return
     end
-})
+
+    -- Start applying speed
+    RunService.Stepped:Connect(function(_, deltaTime)
+        if toggles.customSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+
+            -- Prevent anti-cheat from detecting abnormal movement
+            if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                -- Apply small, incremental CFrame changes based on movement direction
+                local moveDirection = humanoid.MoveDirection * (customSpeed * deltaTime)
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(moveDirection.X, 0, moveDirection.Z)
+            end
+        end
+    end)
+end
 
 -- Toggle Custom Speed
 MovementTab:CreateToggle({
@@ -397,8 +365,6 @@ MovementTab:CreateToggle({
         toggles.customSpeedEnabled = Value
         if Value then
             applyCustomSpeed()
-        else
-            notify("Custom Speed", "Custom Speed disabled.")
         end
     end
 })
@@ -406,28 +372,16 @@ MovementTab:CreateToggle({
 -- Speed Slider
 MovementTab:CreateSlider({
     Name = "Set Custom Speed",
-    Range = {16, 150}, -- Adjust based on game limits
-    Increment = 5,
-    CurrentValue = 50,
+    Range = {16, 50}, -- Safe speed range
+    Increment = 2,
+    CurrentValue = 16,
     Flag = "CustomSpeedSlider",
     Callback = function(Value)
         customSpeed = Value
-        notify("Custom Speed", "Speed set to " .. Value .. ".")
+        notify("Custom Speed", "Custom Speed set to " .. Value .. ".")
     end
 })
 
--- Jump Height Slider
-MovementTab:CreateSlider({
-    Name = "Set Jump Power",
-    Range = {50, 300}, -- Adjust based on game limits
-    Increment = 10,
-    CurrentValue = 50,
-    Flag = "JumpPowerSlider",
-    Callback = function(Value)
-        jumpPower = Value
-        notify("Jump Power", "Jump power set to " .. Value .. ".")
-    end
-})
 
 
 -- Auto Re-Execute Script After Teleport

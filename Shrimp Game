@@ -635,3 +635,26 @@ MainTab:CreateToggle({
         end
     end
 })
+
+-- Script Auto-Updater
+
+-- URL of your raw GitHub script (replace with your script's link)
+local repositoryURL = "https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game"
+
+-- Fetch and execute the latest version of the script
+local success, err = pcall(function()
+    local scriptContent = game:HttpGet(repositoryURL) -- Fetch the script
+    loadstring(scriptContent)() -- Execute the script
+end)
+
+-- Error handling
+if not success then
+    warn("[Auto-Updater] Failed to fetch or execute the script. Error: " .. err)
+    Rayfield:Notify({
+        Title = "Auto-Updater Error",
+        Content = "Failed to fetch the latest script. Check your repository URL or internet connection.",
+        Duration = 5
+    })
+else
+    print("[Auto-Updater] Successfully executed the latest version of the script.")
+end

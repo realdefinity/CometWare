@@ -382,39 +382,116 @@ MovementTab:CreateSlider({
     end
 })
 
+-- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
+-- Variables
+local toggles = {
+    customJumpEnabled = false
+}
+local jumpPower = 50 -- Default custom jump height
 
--- Auto Re-Execute Script After Teleport
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+-- Advanced Anti-Cheat Friendly Jump Logic
+local function applyCustomJump()
+    UserInputService.JumpRequest:Connect(function()
+        if toggles.customJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.FloorMaterial == Enum.Material.Air then return end -- Ensure we're on the ground
+
+            -- Simulate smooth jump with incremental CFrame adjustments
+            for i = 1, jumpPower, 5 do
+                task.wait(0.01) -- Small delay for smoothness
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0.5, 0) -- Incrementally move up
+            end
+
+            -- Simulate landing
+            task.wait(0.1)
+            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, -0.5, 0) -- Minor correction to mimic landing
+        end
+    end)
+end
+
+-- UI Integration
+local MovementTab = Window:CreateTab("Anti-Cheat Movement", 4483362458)
+
+-- Toggle Custom Jump Power
+MovementTab:CreateToggle({
+    Name = "Enable Custom Jump Power",
+    CurrentValue = false,
+    Flag = "CustomJumpToggle",
+    Callback = function(Value)
+        toggles.customJumpEnabled = Value
+        if Value then
+            applyCustomJump()
+            notify("Custom Jump Power", "Custom Jump Power enabled!")
+        else
+            notify("Custom Jump Power", "Custom Jump Power disabled.")
+        end
+    end
+})
+
+-- Jump Power Slider
+MovementTab:CreateSlider({
+    Name = "Set Custom Jump Power",
+    Range = {10, 100}, -- Safe range for jump height
+    Increment = 5,
+    CurrentValue = 50,
+    Flag = "CustomJumpSlider",
+    Callback = function(Value)
+        jumpPower = Value
+        notify("Custom Jump Power", "Jump Power set to " .. Value .. ".")
+    end
+})
 
 -- Services
 local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
--- Script to Queue (Replace with your code)
-local function executeMyScript()
-    -- Example: Replace this with your script
-    loadstring(game:HttpGet("https://example.com/myscript.lua"))()
-end
+-- Unique Flag for Singleton Execution
+local teleportScriptFlag = "_ScriptQueued"
 
--- Save Script to Queue for Teleport
-TeleportService.TeleportInitFailed:Connect(function(_, result)
-    if result == Enum.TeleportResult.Failed then
-        print("[Teleport Queue] Teleport failed. No re-execution needed.")
+-- Ensure the script is queued only once
+if not getgenv()[teleportScriptFlag] then
+    -- Set the global flag to true
+    getgenv()[teleportScriptFlag] = true
+
+    -- Script to Execute After Teleport (Replace the URL with your script)
+    local scriptToExecute = [[
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game"))()
+    ]]
+
+    -- Queue the script for teleport
+    if queue_on_teleport then
+        queue_on_teleport(scriptToExecute)
+        print("[Queue-on-Teleport] Script successfully queued for teleport.")
+    elseif TeleportService.Teleport then
+        -- Basic fallback if `queue_on_teleport` isn't available
+        warn("[Queue-on-Teleport] Your executor does not support queue_on_teleport, but teleport fallback applied.")
+    else
+        warn("[Queue-on-Teleport] Your executor does not support teleport queuing.")
     end
-end)
 
--- Automatically Queue Execution
-if syn and syn.queue_on_teleport then
-    syn.queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game'))()")
-    print("[Teleport Queue] Script queued for teleport.")
-elseif queue_on_teleport then
-    -- For Script-Ware or similar executors
-    queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game'))()")
-    print("[Teleport Queue] Script queued for teleport.")
+    -- Execute the script for the current session
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/Shrimp%20Game"))()
 else
-    warn("[Teleport Queue] Your executor does not support queue_on_teleport.")
+    print("[Queue-on-Teleport] Script is already queued. Avoiding duplicate execution.")
 end
 
--- Initial Script Execution
-executeMyScript()

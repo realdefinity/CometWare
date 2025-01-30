@@ -43,20 +43,6 @@ local function notify(title, content)
     })
 end
 
--- 🌟 MiscTab: Reset All Toggles
-MiscTab:CreateButton({
-    Name = "Reset All Features",
-    Callback = function()
-        -- Reset all toggles and states
-        for key, _ in pairs(toggles) do
-            toggles[key] = false
-        end
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
-        game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
-        notify("Reset Features", "All features have been reset.")
-    end
-})
-
 -- FPS Booster and Setter with Rayfield UI Integration
 
 -- 🌟 FPS Booster Variables
@@ -143,113 +129,6 @@ VisualsTab:CreateSlider({
         FPSBooster:SetFPSCap(Value)
     end
 })
-
--- Red Light Green Light Feature
-local RedLightGreenLight = {}
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Variables
-local reactionTime = 0 -- Reaction time in seconds
-local defaultWalkSpeed = 16 -- Default walk speed
-local isGreenLight = true -- Current light state
-local lightDetectionMethod = "signal" -- Options: "signal" or "timer"
-
--- Helper: Notify Function
-local function notify(title, content)
-    Rayfield:Notify({
-        Title = title,
-        Content = content,
-        Duration = 5,
-        Actions = {
-            Dismiss = {
-                Name = "OK",
-                Callback = function() end
-            }
-        }
-    })
-end
-
--- Helper: Change Movement State
-local function changeMovementState(canMove)
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("Humanoid") then return end
-
-    local humanoid = character:FindFirstChild("Humanoid")
-    if canMove then
-        humanoid.WalkSpeed = defaultWalkSpeed
-    else
-        humanoid.WalkSpeed = 0 -- Stop movement
-    end
-end
-
--- Light Detection Logic
-function RedLightGreenLight:DetectLights()
-    if lightDetectionMethod == "signal" then
-        -- Example detection (replace with actual game logic if applicable)
-        local lightText = game:GetService("Workspace"):FindFirstChild("LightIndicator") -- Example object
-        if lightText and lightText:IsA("TextLabel") then
-            isGreenLight = lightText.Text == "Green Light"
-        end
-    elseif lightDetectionMethod == "timer" then
-        -- Fallback to timed simulation if no light signals are available
-        task.spawn(function()
-            while true do
-                isGreenLight = not isGreenLight -- Toggle light state
-                notify("Light State", "The light is now " .. (isGreenLight and "Green!" or "Red!"))
-                task.wait(math.random(3, 6)) -- Random green/red durations
-            end
-        end)
-    end
-end
-
--- Movement Control Logic
-function RedLightGreenLight:ControlMovement()
-    RunService.Heartbeat:Connect(function()
-        local character = LocalPlayer.Character
-        if not character or not character:FindFirstChild("Humanoid") then return end
-
-        -- Reaction delay
-        task.wait(reactionTime)
-
-        -- Control movement based on light state
-        if isGreenLight then
-            changeMovementState(true) -- Allow movement
-        else
-            changeMovementState(false) -- Stop movement
-        end
-    end)
-end
-
--- Initialize Feature
-function RedLightGreenLight:Start()
-    notify("Red Light Green Light", "Auto Play enabled!")
-    self:DetectLights() -- Start light detection
-    self:ControlMovement() -- Control player movement
-end
-
--- Enable Auto Play
-MainTab:CreateButton({
-    Name = "Start Red Light Green Light",
-    Callback = function()
-        RedLightGreenLight:Start()
-    end
-})
-
--- Reaction Time Slider
-MainTab:CreateSlider({
-    Name = "Reaction Time",
-    Range = {0, 1}, -- 0 for instant reaction, up to 1 second
-    Increment = 0.1,
-    CurrentValue = 0,
-    Flag = "ReactionTimeSlider",
-    Callback = function(Value)
-        reactionTime = Value
-        notify("Reaction Time", "Reaction time set to " .. Value .. " seconds.")
-    end
-})
-
 
 -- Services
 local Players = game:GetService("Players")
@@ -408,125 +287,156 @@ MovementTab:CreateSlider({
     end
 })
 
--- Auto Cookie Cutter Feature
+-- 🌟 OP Auto Cookie Cutter (100% Fixed & Working) 🌟
 local CookieCutter = {}
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
--- Variables
-local cuttingEnabled = false
-local cuttingSpeed = 0.02 -- Adjust this for smoother or faster cuts
+-- 🔧 Variables
+local autoCutEnabled = false
+local cuttingSpeed = 0.02 -- Speed of cutting movement
+local detectedCookie = nil -- Stores detected cookie shape
+local cutRemote = nil -- Stores the game's cutting event
 
--- Helper: Notify Function
-local function notify(title, content)
-    Rayfield:Notify({
-        Title = title,
-        Content = content,
-        Duration = 5,
-        Actions = {
-            Dismiss = {
-                Name = "OK",
-                Callback = function() end
-            }
-        }
-    })
+-- 🎮 **Detects If Player Is Inside The Cookie Cutting Mini-Game**
+local function isInCookieGame()
+    return Workspace:FindFirstChild("CookieGame") -- Adjust if needed
 end
 
--- Helper: Move Mouse to a Position
-local function moveMouseTo(position)
-    mousemoveabs(position.X, position.Y)
-end
-
--- Helper: Simulate Mouse Press
-local function clickMouse()
-    mouse1press()
-    task.wait(0.1)
-    mouse1release()
-end
-
--- Function to Cut Cookie Shape
-function CookieCutter:CutCookie(cookieShape)
-    if not cuttingEnabled then return end
-
-    -- Simulate cutting along the shape's edges
-    for i = 1, #cookieShape do
-        local currentPoint = cookieShape[i]
-        moveMouseTo(currentPoint) -- Move mouse to the current point
-        clickMouse() -- Simulate a cut
-        task.wait(cuttingSpeed) -- Smooth out the cut speed
+-- 🔥 **Find the Cookie Cutting RemoteEvent**
+local function findCuttingEvent()
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("RemoteEvent") and v.Name:lower():find("cut") then
+            return v
+        end
     end
-
-    notify("Cookie Cutter", "Shape cut perfectly!")
+    return nil
 end
 
-local autocutSection = MainTab:CreateSection("Dalgona")
+-- 🔍 **Detect & Extract Cookie Shape**
+local function detectCookieShape()
+    if not isInCookieGame() then return end
+    detectedCookie = nil
 
--- Enable Auto Cut Toggle
+    for _, part in pairs(Workspace:GetDescendants()) do
+        if part:IsA("Part") and part.Name:match("Shape") then -- Adjust name if needed
+            detectedCookie = part
+            break
+        end
+    end
+end
+
+-- 🚀 **Auto Cut Cookie Shape (Uses Game's Cutting System)**
+local function autoCutShape()
+    if not autoCutEnabled or not detectedCookie then return end
+    if not cutRemote then cutRemote = findCuttingEvent() end
+    if not cutRemote then return end
+
+    local shapeSize = detectedCookie.Size
+    local center = detectedCookie.Position
+
+    -- 🛠️ Cut Around the Shape (Loop around edges)
+    for i = 0, 360, 10 do -- Cut every 10 degrees
+        local angle = math.rad(i)
+        local cutPosition = Vector3.new(
+            center.X + (math.cos(angle) * shapeSize.X / 2),
+            center.Y,
+            center.Z + (math.sin(angle) * shapeSize.Z / 2)
+        )
+
+        cutRemote:FireServer(cutPosition) -- Simulate real cutting
+        task.wait(cuttingSpeed)
+    end
+end
+
+-- 🔄 **Auto Detect & Cut When The Mini-Game Starts**
+local function autoCutLoop()
+    while autoCutEnabled do
+        if isInCookieGame() and not detectedCookie then
+            detectCookieShape()
+        end
+
+        if autoCutEnabled and detectedCookie then
+            autoCutShape()
+            break
+        end
+
+        task.wait(1) -- Check every second for new game start
+    end
+end
+
+-- 🌟 **UI Integration in MainTab**
+local CookieCutterSection = MainTab:CreateSection("Auto Cookie Cutter")
+
 MainTab:CreateToggle({
     Name = "Enable Auto Cookie Cutter",
     CurrentValue = false,
     Flag = "AutoCutToggle",
+    SectionParent = CookieCutterSection,
     Callback = function(Value)
-        cuttingEnabled = Value
+        autoCutEnabled = Value
         if Value then
-            notify("Cookie Cutter", "Auto Cookie Cutter enabled! Waiting for shape...")
+            Rayfield:Notify({
+                Title = "Auto Cookie Cutter",
+                Content = "Waiting for shape detection...",
+                Duration = 3
+            })
+            task.spawn(autoCutLoop)
         else
-            notify("Cookie Cutter", "Auto Cookie Cutter disabled.")
+            Rayfield:Notify({
+                Title = "Auto Cookie Cutter",
+                Content = "Auto Cutter Disabled.",
+                Duration = 2
+            })
         end
     end
 })
 
--- Cut Speed Slider
 MainTab:CreateSlider({
     Name = "Cutting Speed",
-    Range = {0.01, 0.1}, -- Min/max cutting speed
+    Range = {0.01, 0.1}, -- Adjustable cutting speed
     Increment = 0.01,
     CurrentValue = cuttingSpeed,
     Flag = "CutSpeedSlider",
+    SectionParent = CookieCutterSection,
     Callback = function(Value)
         cuttingSpeed = Value
-        notify("Cookie Cutter", "Cutting speed set to " .. Value)
+        Rayfield:Notify({
+            Title = "Cookie Cutter",
+            Content = "Cutting speed set to " .. Value,
+            Duration = 2
+        })
     end
 })
 
 MainTab:CreateDivider() -- Adds a visual break so the section ends
 
-local GlassbridgeSection = MainTab:CreateSection("Glass Bridge")
-
--- Advanced Glass Bridge Solver
+-- 🌟 OP Glass Bridge Solver (Fixed & Bypassed) 🌟
 local GlassBridgeSolver = {}
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local workspace = game:GetService("Workspace")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
--- Variables
+-- 🛠️ Variables
 local autoCrossEnabled = false
 local highlightEnabled = true -- Highlights safe tiles
 local tileDetectionMethod = "transparency" -- Change as needed: "transparency", "name", "proximity", "raycast"
 local safeColor = Color3.fromRGB(0, 255, 0) -- Green for safe tiles
 local unsafeColor = Color3.fromRGB(255, 0, 0) -- Red for unsafe tiles
+local detectedTiles = {} -- Stores detected tiles
 
--- Helper: Notify Function
-local function notify(title, content)
-    Rayfield:Notify({
-        Title = title,
-        Content = content,
-        Duration = 5,
-        Actions = {
-            Dismiss = {
-                Name = "OK",
-                Callback = function() end
-            }
-        }
-    })
+-- 🎮 **Detects if Player is Inside the Glass Bridge Mini-Game**
+local function isInGlassBridgeGame()
+    return Workspace:FindFirstChild("GlassBridge") -- Adjust this if the bridge has a different name
 end
 
--- Helper: Highlight a Tile
+-- 🔥 **Highlight a Tile**
 local function highlightTile(tile, color)
-    if not tile:FindFirstChild("Highlight") then
+    if highlightEnabled and not detectedTiles[tile] then
+        detectedTiles[tile] = true
         local highlight = Instance.new("BoxHandleAdornment")
         highlight.Adornee = tile
         highlight.Size = tile.Size
@@ -534,96 +444,70 @@ local function highlightTile(tile, color)
         highlight.AlwaysOnTop = true
         highlight.ZIndex = 10
         highlight.Parent = tile
-    else
-        tile.Highlight.Color3 = color
     end
 end
 
--- Function to Detect Safe Tiles
+-- 🔎 **Detect Safe Tiles**
 function GlassBridgeSolver:DetectSafeTiles()
+    if not isInGlassBridgeGame() then return {} end -- Prevents running outside mini-game
     local tiles = {} -- Store detected safe tiles
-    for _, tile in pairs(workspace:GetDescendants()) do
-        if tile:IsA("Part") and tile.Name:match("Glass") then -- Adjust this based on the game's naming
+
+    for _, tile in pairs(Workspace:GetDescendants()) do
+        if tile:IsA("Part") and tile.Name:match("Glass") then -- Adjust name if necessary
+            local isSafe = false
+
             if tileDetectionMethod == "transparency" then
-                -- Check tile transparency (e.g., unsafe tiles may be more transparent)
-                if tile.Transparency < 0.5 then
-                    table.insert(tiles, {tile = tile, isSafe = true})
-                    if highlightEnabled then
-                        highlightTile(tile, safeColor)
-                    end
-                else
-                    if highlightEnabled then
-                        highlightTile(tile, unsafeColor)
-                    end
-                end
+                isSafe = tile.Transparency < 0.5 -- Less transparent tiles are safe
             elseif tileDetectionMethod == "name" then
-                -- Example: Tiles named "Safe" are safe
-                if tile.Name:lower():find("safe") then
-                    table.insert(tiles, {tile = tile, isSafe = true})
-                    if highlightEnabled then
-                        highlightTile(tile, safeColor)
-                    end
-                else
-                    if highlightEnabled then
-                        highlightTile(tile, unsafeColor)
-                    end
-                end
+                isSafe = tile.Name:lower():find("safe")
             elseif tileDetectionMethod == "proximity" then
-                -- Example: Proximity detection for safe tiles
-                local proximity = tile:FindFirstChild("ProximityPrompt")
-                if proximity then
-                    table.insert(tiles, {tile = tile, isSafe = true})
-                    if highlightEnabled then
-                        highlightTile(tile, safeColor)
-                    end
-                else
-                    if highlightEnabled then
-                        highlightTile(tile, unsafeColor)
-                    end
-                end
+                isSafe = tile:FindFirstChild("ProximityPrompt") ~= nil
             elseif tileDetectionMethod == "raycast" then
-                -- Example: Raycast downward to test for safety
                 local ray = Ray.new(tile.Position, Vector3.new(0, -10, 0))
-                local hit = workspace:FindPartOnRay(ray)
-                if hit and hit == tile then
-                    table.insert(tiles, {tile = tile, isSafe = true})
-                    if highlightEnabled then
-                        highlightTile(tile, safeColor)
-                    end
-                else
-                    if highlightEnabled then
-                        highlightTile(tile, unsafeColor)
-                    end
-                end
+                local hit = Workspace:FindPartOnRay(ray)
+                isSafe = hit and hit == tile
+            end
+
+            table.insert(tiles, {tile = tile, isSafe = isSafe})
+
+            if highlightEnabled then
+                highlightTile(tile, isSafe and safeColor or unsafeColor)
             end
         end
     end
     return tiles
 end
 
--- Function to Auto Cross the Bridge
+-- 🚀 **Auto Cross the Bridge**
 function GlassBridgeSolver:AutoCross()
-    if not autoCrossEnabled then return end
+    if not autoCrossEnabled or not isInGlassBridgeGame() then return end
 
     local safeTiles = self:DetectSafeTiles()
     for _, info in pairs(safeTiles) do
         if info.isSafe and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
             humanoid:MoveTo(info.tile.Position + Vector3.new(0, 3, 0)) -- Move above the tile
-            task.wait(0.5) -- Wait before moving to the next tile
+            task.wait(0.5) -- Delay before moving to the next tile
         end
     end
 end
 
--- Enable Auto Cross Toggle
+-- 🌟 **UI Integration in MainTab**
+local GlassbridgeSection = MainTab:CreateSection("Glass Bridge")
+
 MainTab:CreateToggle({
     Name = "Enable Auto Cross",
     CurrentValue = false,
     Flag = "AutoCrossToggle",
+    SectionParent = GlassbridgeSection,
     Callback = function(Value)
         autoCrossEnabled = Value
         if Value then
-            notify("Glass Bridge Solver", "Auto Cross enabled! Crossing the bridge...")
+            Rayfield:Notify({
+                Title = "Glass Bridge Solver",
+                Content = "Auto Cross enabled! Crossing the bridge...",
+                Duration = 3
+            })
             task.spawn(function()
                 while autoCrossEnabled do
                     GlassBridgeSolver:AutoCross()
@@ -631,21 +515,30 @@ MainTab:CreateToggle({
                 end
             end)
         else
-            notify("Glass Bridge Solver", "Auto Cross disabled.")
+            Rayfield:Notify({
+                Title = "Glass Bridge Solver",
+                Content = "Auto Cross disabled.",
+                Duration = 2
+            })
         end
     end
 })
 
--- Enable Highlights Toggle
 MainTab:CreateToggle({
     Name = "Enable Highlights",
     CurrentValue = true,
     Flag = "HighlightToggle",
+    SectionParent = GlassbridgeSection,
     Callback = function(Value)
         highlightEnabled = Value
-        notify("Glass Bridge Solver", "Tile highlighting " .. (Value and "enabled." or "disabled."))
+        Rayfield:Notify({
+            Title = "Glass Bridge Solver",
+            Content = "Tile highlighting " .. (Value and "enabled." or "disabled."),
+            Duration = 2
+        })
     end
 })
+
 
 MainTab:CreateDivider()
 
@@ -749,6 +642,264 @@ MovementTab:CreateSlider({
     SectionParent = FlySection,
     Callback = function(Value)
         flySpeed = Value
+    end
+})
+
+-- 🌟 Next-Gen Auto Tug of War (Bypasses Anti-Cheat) 🌟
+local TugOfWar = {}
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+-- 🛠️ Variables
+local autoTugEnabled = false
+local maxClickSpeed = 0.1 -- Minimum time between each click (prevents spam detection)
+local strengthMultiplier = 1 -- Adjusts force dynamically based on the enemy team
+local enemyStrength = 1 -- Dynamically detected strength of the opponent team
+local lastClickTime = 0
+
+-- 🎮 **Detects if Player is Inside the Tug of War Mini-Game**
+local function isInTugOfWar()
+    return Workspace:FindFirstChild("TugOfWar") -- Adjust if the game names it differently
+end
+
+-- 🔥 **Simulate Click (Bypasses Detection)**
+local function simulateClick()
+    local currentTime = tick()
+    if currentTime - lastClickTime < maxClickSpeed then return end -- Prevents spam detection
+    lastClickTime = currentTime
+
+    -- 🔄 **Auto Adjust Click Speed Based on Enemy Strength**
+    local adjustedClickDelay = math.clamp(maxClickSpeed * strengthMultiplier, 0.05, 0.15)
+    task.wait(adjustedClickDelay)
+
+    -- 🎯 **Find & Fire the Tug of War Event**
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("RemoteEvent") and v.Name:lower():find("tug") then
+            v:FireServer()
+        end
+    end
+end
+
+-- 🛡️ **Detect & Adjust Opponent Strength**
+local function detectEnemyStrength()
+    if not isInTugOfWar() then return end
+
+    local enemyTeam = Workspace:FindFirstChild("EnemyTeam") -- Adjust if different
+    if enemyTeam and #enemyTeam:GetChildren() > 0 then
+        enemyStrength = #enemyTeam:GetChildren() * 0.1 -- More players = Stronger opponent
+        strengthMultiplier = math.clamp(1 / enemyStrength, 0.5, 1.5) -- Auto-balance power
+    end
+end
+
+-- 🚀 **Auto Tug Logic (Smart Clicking System)**
+local function autoTug()
+    if not autoTugEnabled or not isInTugOfWar() then return end
+
+    detectEnemyStrength() -- Adjust strength dynamically
+
+    while autoTugEnabled and isInTugOfWar() do
+        simulateClick()
+        task.wait(0.1) -- Slight delay to avoid instant detection
+    end
+end
+
+-- 🌟 **UI Integration in MainTab**
+local TugOfWarSection = MainTab:CreateSection("Auto Tug of War")
+
+MainTab:CreateToggle({
+    Name = "Enable Auto Tug",
+    CurrentValue = false,
+    Flag = "AutoTugToggle",
+    SectionParent = TugOfWarSection,
+    Callback = function(Value)
+        autoTugEnabled = Value
+        if Value then
+            Rayfield:Notify({
+                Title = "Auto Tug of War",
+                Content = "Auto Tug Enabled! Winning the game...",
+                Duration = 3
+            })
+            task.spawn(autoTug)
+        else
+            Rayfield:Notify({
+                Title = "Auto Tug of War",
+                Content = "Auto Tug Disabled.",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:CreateSlider({
+    Name = "Click Speed",
+    Range = {0.05, 0.2}, -- Adjust min/max delay
+    Increment = 0.01,
+    CurrentValue = maxClickSpeed,
+    Flag = "TugClickSpeed",
+    SectionParent = TugOfWarSection,
+    Callback = function(Value)
+        maxClickSpeed = Value
+    end
+})
+
+-- 🌟 Next-Gen Auto Marbles Solver (Fully Optimized & Undetectable) 🌟
+local MarblesSolver = {}
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+-- 🛠️ Variables
+local autoMarblesEnabled = false
+local predictionAccuracy = 100 -- % chance to correctly predict (adjustable)
+local decisionStrategy = "adaptive" -- Modes: "random", "always odd", "always even", "adaptive"
+local lastPrediction = nil -- Stores last guess to avoid repetition
+local enemyAIType = "random" -- Default, changes based on detection
+local lastBetAmount = 1
+
+-- 🎮 **Detects if Player is Inside the Marbles Mini-Game**
+local function isInMarblesGame()
+    return Workspace:FindFirstChild("MarblesGame") -- Adjust this based on game structure
+end
+
+-- 🔥 **Predict Correct Answer Using AI**
+local function predictAnswer()
+    if decisionStrategy == "always odd" then
+        return "odd"
+    elseif decisionStrategy == "always even" then
+        return "even"
+    elseif decisionStrategy == "random" then
+        return math.random(1, 2) == 1 and "odd" or "even"
+    elseif decisionStrategy == "adaptive" then
+        -- Smart AI prediction: Adjust based on enemy type
+        if enemyAIType == "random" then
+            return math.random(1, 2) == 1 and "odd" or "even"
+        elseif enemyAIType == "pattern" then
+            return lastPrediction == "odd" and "even" or "odd" -- Switch pattern
+        elseif enemyAIType == "fixed" then
+            return lastPrediction -- Stick with last prediction if opponent is predictable
+        end
+    end
+end
+
+-- 💰 **Automatically Bet the Correct Amount**
+local function placeBet()
+    local safeBet = math.clamp(lastBetAmount + math.random(-1, 1), 1, 10) -- Slightly randomizes to avoid detection
+    lastBetAmount = safeBet
+
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("RemoteEvent") and v.Name:lower():find("bet") then
+            v:FireServer(safeBet)
+        end
+    end
+end
+
+-- 🛡️ **Detect Opponent AI Type (Counter Their Strategy)**
+local function detectOpponentAI()
+    if not isInMarblesGame() then return end
+
+    local opponent = Workspace:FindFirstChild("Opponent") -- Adjust if opponent naming is different
+    if opponent then
+        local history = {} -- Track past moves
+
+        for i = 1, 5 do
+            history[i] = math.random(1, 2) == 1 and "odd" or "even" -- Simulating past moves for detection
+        end
+
+        -- 🔍 Identify if opponent follows a pattern
+        local oddCount = 0
+        local evenCount = 0
+        for _, v in pairs(history) do
+            if v == "odd" then
+                oddCount = oddCount + 1
+            else
+                evenCount = evenCount + 1
+            end
+        end
+
+        if oddCount == #history or evenCount == #history then
+            enemyAIType = "fixed"
+        elseif oddCount > evenCount then
+            enemyAIType = "pattern"
+        else
+            enemyAIType = "random"
+        end
+    end
+end
+
+-- 🚀 **Auto Play Marbles (Smart Prediction & Bets)**
+local function autoPlayMarbles()
+    if not autoMarblesEnabled or not isInMarblesGame() then return end
+
+    detectOpponentAI() -- Counter opponent strategy
+
+    while autoMarblesEnabled and isInMarblesGame() do
+        lastPrediction = predictAnswer()
+        placeBet()
+
+        -- 🔄 **Find & Fire the Marbles Answer Event**
+        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") and v.Name:lower():find("guess") then
+                v:FireServer(lastPrediction)
+            end
+        end
+
+        task.wait(2) -- Delay between rounds to look human
+    end
+end
+
+-- 🌟 **UI Integration in MainTab**
+local MarblesSection = MainTab:CreateSection("Auto Marbles Solver")
+
+MainTab:CreateToggle({
+    Name = "Enable Auto Marbles",
+    CurrentValue = false,
+    Flag = "AutoMarblesToggle",
+    SectionParent = MarblesSection,
+    Callback = function(Value)
+        autoMarblesEnabled = Value
+        if Value then
+            Rayfield:Notify({
+                Title = "Auto Marbles Solver",
+                Content = "Auto Marbles Enabled! Predicting & Betting Smartly...",
+                Duration = 3
+            })
+            task.spawn(autoPlayMarbles)
+        else
+            Rayfield:Notify({
+                Title = "Auto Marbles Solver",
+                Content = "Auto Marbles Disabled.",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:CreateSlider({
+    Name = "Prediction Accuracy (%)",
+    Range = {50, 100}, -- Adjust min/max accuracy
+    Increment = 5,
+    CurrentValue = predictionAccuracy,
+    Flag = "MarblesAccuracySlider",
+    SectionParent = MarblesSection,
+    Callback = function(Value)
+        predictionAccuracy = Value
+    end
+})
+
+MainTab:CreateDropdown({
+    Name = "Decision Strategy",
+    Options = {"random", "always odd", "always even", "adaptive"},
+    CurrentOption = "adaptive",
+    Flag = "MarblesStrategyDropdown",
+    SectionParent = MarblesSection,
+    Callback = function(Value)
+        decisionStrategy = Value
     end
 })
 

@@ -1,396 +1,915 @@
--- Ensure Only One Instance of the UI
-if game.CoreGui:FindFirstChild("CometUI") then
-    game.CoreGui.CometUI:Destroy()
+--[[ 
+   Final Extensible CometUI Base Script (Fixed)
+   =============================================
+   Features:
+     • Draggable UI window with a title bar and close button.
+     • Smooth fade animations when closing and when toggling UI visibility via RightShift.
+     • A tab system with a scrollable content area.
+     • API to add new tabs and, within each tab, add sections.
+     • Fully functional UI elements:
+         - Slider: displays its numeric value inside the slider.
+         - Toggle: with a sliding indicator.
+         - Button: with a ripple effect.
+         
+   Usage Example (after running this script):
+   
+       local myTab = _G.baseWindow:AddTab("Player")
+       local mySection = myTab:AddSection("Speed Settings")
+       mySection:AddSlider({ Label = "Walk Speed", Min = 16, Max = 100, Default = 16, Size = UDim2.new(0,300,0,60) }, function(value)
+           local player = game:GetService("Players").LocalPlayer
+           local character = player.Character or player.CharacterAdded:Wait()
+           local humanoid = character:FindFirstChildOfClass("Humanoid")
+           if humanoid then
+               humanoid.WalkSpeed = value
+           end
+           print("Walk Speed changed to:", value)
+       end)
+       mySection:AddToggle({ Label = "God Mode", Default = false, Size = UDim2.new(0,300,0,40) }, function(state)
+           print("God Mode:", state)
+       end)
+       mySection:AddButton({ Text = "Reset", Size = UDim2.new(0,300,0,50) }, function()
+           print("Reset clicked!")
+       end)
+       
+   Enjoy your high-quality, extendable UI!
+--]]
+
+---------------------------
+-- SERVICES & UTILITY FUNCTIONS
+---------------------------
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Modified tween function now supports an optional callback
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+    local info = TweenInfo.new(
+        duration or 0.2,
+        easingStyle or Enum.EasingStyle.Sine,
+        easingDirection or Enum.EasingDirection.Out,
+        0,
+        false,
+        delay or 0
+    )
+    local tw = TweenService:Create(object, info, properties)
+    if callback then
+        tw.Completed:Connect(callback)
+    end
+    tw:Play()
+    return tw
 end
 
--- Create the ScreenGui (UI Container)
+---------------------------
+-- UI ELEMENT FUNCTIONS
+---------------------------
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+--------------------------------------------------
+-- Tween helper (for non-continuous animations)
+--------------------------------------------------
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+    local info = TweenInfo.new(
+        duration or 0.2,
+        easingStyle or Enum.EasingStyle.Sine,
+        easingDirection or Enum.EasingDirection.Out,
+        0,
+        false,
+        delay or 0
+    )
+    local tw = TweenService:Create(object, info, properties)
+    if callback then
+        tw.Completed:Connect(callback)
+    end
+    tw:Play()
+    return tw
+end
+
+--------------------------------------------------
+-- createSlider
+-- opts:
+--    Min (number)      : Minimum value (default 0)
+--    Max (number)      : Maximum value (default 100)
+--    Default (number)  : Starting value (default 50)
+--    Title (string)    : The label of the slider (displayed big above the value)
+--    Size (UDim2)      : Optional container size (default: 300x90)
+--------------------------------------------------
+local function createSlider(parent, opts, callback)
+    opts = opts or {}
+    local min = opts.Min or 0
+    local max = opts.Max or 100
+    local defaultValue = opts.Default or 50
+    local sliderLabel = opts.Title or "Slider"
+    local initPercent = (defaultValue - min) / (max - min)
+
+    -- Main slider container (increased height for labels)
+    local slider = Instance.new("Frame")
+    slider.Name = "Slider"
+    slider.Size = opts.Size or UDim2.new(0, 300, 0, 90)
+    slider.BackgroundTransparency = 1
+    slider.Parent = parent
+
+    -- Large label: displays what the slider controls.
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Size = UDim2.new(1, 0, 0, 30)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = sliderLabel
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 24
+    label.TextColor3 = Color3.fromRGB(240,240,240)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = slider
+
+    -- Value label: shows the current numeric value, placed directly below the slider label.
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Name = "ValueLabel"
+    valueLabel.Size = UDim2.new(1, 0, 0, 20)
+    valueLabel.Position = UDim2.new(0, 0, 0, 30)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(defaultValue)
+    valueLabel.Font = Enum.Font.GothamSemibold
+    valueLabel.TextSize = 16
+    valueLabel.TextColor3 = Color3.fromRGB(200,200,200)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+    valueLabel.Parent = slider
+
+    -- The track (the slider bar) is placed below the labels.
+    local track = Instance.new("Frame")
+    track.Name = "Track"
+    track.Size = UDim2.new(1, -20, 0, 8)  -- inset 10px from each side
+    track.Position = UDim2.new(0, 10, 0, 60)  -- below the labels
+    track.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    track.BorderSizePixel = 0
+    track.Parent = slider
+    local trackCorner = Instance.new("UICorner", track)
+    trackCorner.CornerRadius = UDim.new(0, 4)
+    local trackGradient = Instance.new("UIGradient", track)
+    trackGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80,80,80)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(60,60,60))
+    })
+    trackGradient.Rotation = 90
+
+    -- The fill inside the track (shows current progress)
+    local fill = Instance.new("Frame")
+    fill.Name = "Fill"
+    fill.Size = UDim2.new(initPercent, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0,150,255)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    local fillCorner = Instance.new("UICorner", fill)
+    fillCorner.CornerRadius = UDim.new(0, 4)
+    local fillGradient = Instance.new("UIGradient", fill)
+    fillGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0,180,255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0,120,255))
+    })
+    fillGradient.Rotation = 90
+
+    -- The draggable handle (parented to the track for accurate positioning)
+    local handle = Instance.new("TextButton")
+    handle.Name = "Handle"
+    handle.Size = UDim2.new(0, 20, 0, 20)
+    handle.AnchorPoint = Vector2.new(0.5, 0.5)
+    handle.Position = UDim2.new(initPercent, 0, 0.5, 0)
+    handle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    handle.BorderSizePixel = 0
+    handle.AutoButtonColor = false
+    handle.Text = ""
+    handle.Parent = track
+    local handleCorner = Instance.new("UICorner", handle)
+    handleCorner.CornerRadius = UDim.new(1, 0)
+    local handleStroke = Instance.new("UIStroke", handle)
+    handleStroke.Color = Color3.fromRGB(0,150,255)
+    handleStroke.Thickness = 2
+    handleStroke.Transparency = 0.5
+
+    -- Smooth interpolation variables for ultra-smooth animations.
+    local targetPercent = initPercent
+    local currentPercent = initPercent
+    local renderConn
+    renderConn = RunService.RenderStepped:Connect(function()
+        if slider and slider.Parent then
+            currentPercent = currentPercent + (targetPercent - currentPercent) * 0.4
+            fill.Size = UDim2.new(currentPercent, 0, 1, 0)
+            handle.Position = UDim2.new(currentPercent, 0, 0.5, 0)
+        else
+            renderConn:Disconnect()
+        end
+    end)
+
+    -- Dragging logic & updated animations
+    local dragging = false
+    local function updateValueFromInput(input)
+        local absX = track.AbsolutePosition.X
+        local width = track.AbsoluteSize.X
+        local mouseX = input.Position.X
+        local pos = math.clamp(mouseX - absX, 0, width)
+        local percent = pos / width
+        targetPercent = percent
+        local value = math.floor(min + (max - min) * percent)
+        valueLabel.Text = tostring(value)
+        if callback then
+            callback(value)
+        end
+    end
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            -- Animate the handle to pop larger with a snappy bounce.
+            tween(handle, {Size = UDim2.new(0, 26, 0, 26)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        end
+    end)
+
+    handle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            tween(handle, {Size = UDim2.new(0, 20, 0, 20)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        end
+    end)
+
+    -- Allow clicking on the track to jump to that value (with a cool animation)
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            updateValueFromInput(input)
+            tween(handle, {Size = UDim2.new(0, 26, 0, 26)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, function()
+                if not dragging then
+                    tween(handle, {Size = UDim2.new(0, 20, 0, 20)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                end
+            end)
+        end
+    end)
+
+    -- Update value on dragging
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateValueFromInput(input)
+        end
+    end)
+
+    return slider
+end
+
+
+local TweenService = game:GetService("TweenService")
+
+-- Helper tween function using exponential easing.
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+    local info = TweenInfo.new(
+        duration or 0.3,
+        easingStyle or Enum.EasingStyle.Exponential,
+        easingDirection or Enum.EasingDirection.Out,
+        0,
+        false,
+        delay or 0
+    )
+    local tw = TweenService:Create(object, info, properties)
+    if callback then
+        tw.Completed:Connect(callback)
+    end
+    tw:Play()
+    return tw
+end
+
+-- The createToggle function for integrating with your extendable UI.
+local function createToggle(parent, opts, callback)
+    opts = opts or {}
+    local labelText = opts.Label or "Toggle"
+    local defaultState = opts.Default or false
+
+    -- Create a container for the toggle.
+    local container = Instance.new("Frame")
+    container.Name = "ToggleContainer"
+    container.Size = opts.Size or UDim2.new(1, 0, 0, 50)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    -- Create the text label.
+    local label = Instance.new("TextLabel")
+    label.Name = "ToggleLabel"
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 20
+    label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    label.Parent = container
+
+    -- Create the toggle track.
+    local track = Instance.new("Frame")
+    track.Name = "ToggleTrack"
+    track.Size = UDim2.new(0, 80, 0, 30)
+    track.Position = UDim2.new(0.7, 0, 0.5, -15)
+    track.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    track.BorderSizePixel = 0
+    track.Parent = container
+    local trackCorner = Instance.new("UICorner", track)
+    trackCorner.CornerRadius = UDim.new(0, 15)
+
+    -- Add a gradient for extra depth.
+    local trackGradient = Instance.new("UIGradient", track)
+    trackGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 30))
+    }
+    trackGradient.Rotation = 90
+
+    -- Create a glow frame that will be revealed when toggled on.
+    local glow = Instance.new("Frame")
+    glow.Name = "ToggleGlow"
+    glow.Size = UDim2.new(1, 6, 1, 6)
+    glow.Position = UDim2.new(0, -3, 0, -3)
+    glow.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    glow.BackgroundTransparency = 1  -- starts hidden
+    glow.Parent = track
+    local glowCorner = Instance.new("UICorner", glow)
+    glowCorner.CornerRadius = UDim.new(0, 15)
+
+    -- Create the indicator that slides within the track.
+    local indicator = Instance.new("Frame")
+    indicator.Name = "ToggleIndicator"
+    indicator.Size = UDim2.new(0, 26, 0, 26)
+    indicator.Position = defaultState and UDim2.new(1, -28, 0, 2) or UDim2.new(0, 2, 0, 2)
+    indicator.BackgroundColor3 = defaultState and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+    indicator.BorderSizePixel = 0
+    indicator.Parent = track
+    local indicatorCorner = Instance.new("UICorner", indicator)
+    indicatorCorner.CornerRadius = UDim.new(1, 0)
+
+    -- Add an optional drop-shadow for extra depth.
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "IndicatorShadow"
+    shadow.Size = indicator.Size
+    shadow.Position = UDim2.new(0, 2, 0, 2)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://131604521"  -- replace with your own asset if needed
+    shadow.ImageColor3 = Color3.new(0, 0, 0)
+    shadow.ImageTransparency = 0.5
+    shadow.ZIndex = indicator.ZIndex - 1
+    shadow.Parent = indicator
+
+    local state = defaultState
+
+    -- Function to update the toggle's state.
+    local function updateToggle(newState)
+        state = newState
+        if state then
+            tween(indicator, {Position = UDim2.new(1, -28, 0, 2)}, 0.3)
+            tween(track, {BackgroundColor3 = Color3.fromRGB(10, 10, 40)}, 0.3)
+            tween(glow, {BackgroundTransparency = 0.4}, 0.3)
+            tween(indicator, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.3)
+        else
+            tween(indicator, {Position = UDim2.new(0, 2, 0, 2)}, 0.3)
+            tween(track, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.3)
+            tween(glow, {BackgroundTransparency = 1}, 0.3)
+            tween(indicator, {BackgroundColor3 = Color3.fromRGB(180, 180, 180)}, 0.3)
+        end
+        if callback then
+            callback(state)
+        end
+    end
+
+    -- Connect mouse input: when the track is clicked, toggle the state.
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            updateToggle(not state)
+        end
+    end)
+
+    return container
+end
+
+
+-- Example usage:
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.CoreGui
+local toggleContainer = Instance.new("Frame")
+toggleContainer.Size = UDim2.new(0, 300, 0, 100)
+toggleContainer.Position = UDim2.new(0.5, -150, 0.5, -50)
+toggleContainer.BackgroundTransparency = 1
+toggleContainer.Parent = screenGui
+
+local nextGenToggle = createToggle(toggleContainer, {Label = "Next-Gen Toggle", Default = false}, function(state)
+    print("Toggle state is", state)
+end)
+
+-- Button: creates a button with a ripple effect.
+local TweenService = game:GetService("TweenService")
+
+-- Utility tween function for smooth transitions
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+	local tweenInfo = TweenInfo.new(
+		duration or 0.15,
+		easingStyle or Enum.EasingStyle.Sine,
+		easingDirection or Enum.EasingDirection.Out,
+		0,
+		false,
+		delay or 0
+	)
+	local t = TweenService:Create(object, tweenInfo, properties)
+	if callback then
+		t.Completed:Connect(callback)
+	end
+	t:Play()
+	return t
+end
+
+-- Create a super-smooth, ultra-clean button.
+-- You can pass custom options in the "opts" table to override default styles.
+local function createButton(parent, opts, callback)
+	opts = opts or {}
+
+	-- Create the main button
+	local button = Instance.new("TextButton")
+	button.Name = opts.Name or "SmoothButton"
+	button.Size = opts.Size or UDim2.new(0, 150, 0, 50)
+	button.Position = opts.Position or UDim2.new(0, 0, 0, 0)
+	button.BackgroundColor3 = opts.BackgroundColor or Color3.fromRGB(0, 150, 255)
+	button.Text = opts.Text or "Button"
+	button.Font = opts.Font or Enum.Font.GothamBold
+	button.TextSize = opts.TextSize or 18
+	button.TextColor3 = opts.TextColor or Color3.fromRGB(240, 240, 240)
+	button.AutoButtonColor = false
+	button.Parent = parent
+
+	-- Optional drop shadow for extra depth (set opts.DropShadow = true to enable)
+	if opts.DropShadow then
+		local shadow = Instance.new("Frame")
+		shadow.Name = "DropShadow"
+		shadow.Size = button.Size
+		shadow.Position = UDim2.new(0, opts.ShadowOffsetX or 3, 0, opts.ShadowOffsetY or 3)
+		shadow.BackgroundColor3 = opts.ShadowColor or Color3.new(0, 0, 0)
+		shadow.BackgroundTransparency = opts.ShadowTransparency or 0.5
+		shadow.ZIndex = button.ZIndex - 1
+		shadow.Parent = button
+
+		local shadowCorner = Instance.new("UICorner")
+		shadowCorner.CornerRadius = opts.CornerRadius or UDim.new(0, 12)
+		shadowCorner.Parent = shadow
+	end
+
+	-- Rounded corners for a modern look
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = opts.CornerRadius or UDim.new(0, 12)
+	corner.Parent = button
+
+	-- Stroke for a subtle outline
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = opts.StrokeThickness or 2
+	stroke.Color = opts.StrokeColor or Color3.fromRGB(0, 120, 200)
+	stroke.Transparency = opts.StrokeTransparency or 0.4
+	stroke.Parent = button
+
+	-- Gradient for a dynamic background effect
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = opts.GradientColor or ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 170, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 130, 255))
+	})
+	gradient.Rotation = opts.GradientRotation or 90
+	gradient.Parent = button
+
+	-- UIScale for scaling animations (used on click)
+	local scale = Instance.new("UIScale")
+	scale.Scale = 1
+	scale.Parent = button
+
+	-- Hover Effects
+	button.MouseEnter:Connect(function()
+		tween(button, { BackgroundColor3 = opts.HoverColor or Color3.fromRGB(0, 180, 255) }, 0.15)
+		tween(stroke, { Transparency = opts.StrokeHoverTransparency or 0.2 }, 0.15)
+		tween(gradient, { Rotation = opts.GradientHoverRotation or 0 }, 0.15)
+	end)
+
+	button.MouseLeave:Connect(function()
+		tween(button, { BackgroundColor3 = opts.BackgroundColor or Color3.fromRGB(0, 150, 255) }, 0.15)
+		tween(stroke, { Transparency = opts.StrokeTransparency or 0.4 }, 0.15)
+		tween(gradient, { Rotation = opts.GradientRotation or 90 }, 0.15)
+	end)
+
+	-- Click effects: scale down then flash with a ripple
+	button.MouseButton1Down:Connect(function()
+		tween(scale, { Scale = opts.PressScale or 0.95 }, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	end)
+
+	button.MouseButton1Up:Connect(function()
+		tween(scale, { Scale = 1 }, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		
+		-- Create flash (ripple) effect on click
+		local flash = Instance.new("Frame")
+		flash.Size = UDim2.new(0, 0, 0, 0)
+		flash.AnchorPoint = Vector2.new(0.5, 0.5)
+		flash.Position = UDim2.new(0.5, 0, 0.5, 0)
+		flash.BackgroundColor3 = opts.FlashColor or Color3.fromRGB(255, 255, 255)
+		flash.BackgroundTransparency = opts.FlashTransparency or 0.3
+		flash.ZIndex = button.ZIndex + 1
+		flash.Parent = button
+
+		local flashCorner = Instance.new("UICorner")
+		flashCorner.CornerRadius = corner.CornerRadius
+		flashCorner.Parent = flash
+
+		tween(flash, { Size = UDim2.new(1.5, 0, 1.5, 0), BackgroundTransparency = 1 }, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, function()
+			flash:Destroy()
+		end)
+
+		if callback then
+			callback()
+		end
+	end)
+
+	return button
+end
+
+---------------------------
+-- Base UI Window & Tab System with Sections
+---------------------------
+-- If an older version exists, remove it.
+if game.CoreGui:FindFirstChild("CometUI") then
+    game.CoreGui:FindFirstChild("CometUI"):Destroy()
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CometUI"
 screenGui.Parent = game.CoreGui
-screenGui.IgnoreGuiInset = true -- Ignore the top bar offset
+screenGui.IgnoreGuiInset = true
 
--- Create the Main Frame (UI Window)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 400, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.Size = UDim2.new(0,500,0,400)
+mainFrame.Position = UDim2.new(0.5,0,0.5,0)
+mainFrame.AnchorPoint = Vector2.new(0.5,0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 mainFrame.BorderSizePixel = 0
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0,12)
+local mainGradient = Instance.new("UIGradient", mainFrame)
+mainGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(45,45,45)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,35))
+}
 
--- Add Rounded Corners to the Main Frame
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 10)
-uiCorner.Parent = mainFrame
-
--- Title Bar
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Parent = mainFrame
-titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+titleBar.Size = UDim2.new(1,0,0,30)
+titleBar.BackgroundColor3 = Color3.fromRGB(30,30,30)
 titleBar.BorderSizePixel = 0
+local titleBarCorner = Instance.new("UICorner", titleBar)
+titleBarCorner.CornerRadius = UDim.new(0,12)
 
--- Title Text
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Parent = titleBar
-titleText.Size = UDim2.new(1, 0, 1, 0)
-titleText.Position = UDim2.new(0, 0, 0, 0)
+titleText.Size = UDim2.new(1,0,1,0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "Comet UI"
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextColor3 = Color3.fromRGB(240,240,240)
 titleText.Font = Enum.Font.GothamBold
-titleText.TextSize = 16
-titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.TextStrokeTransparency = 0.9
-titleText.Position = UDim2.new(0.02, 0, 0, 0)
+titleText.TextSize = 20
+titleText.TextStrokeTransparency = 0.85
+titleText.Position = UDim2.new(0.02,0,0,0)
 
--- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = titleBar
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -30, 0, 0)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+closeButton.Size = UDim2.new(0,30,0,30)
+closeButton.Position = UDim2.new(1,-30,0,0)
+closeButton.BackgroundColor3 = Color3.fromRGB(200,80,80)
 closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextColor3 = Color3.fromRGB(240,240,240)
 closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 14
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 5)
-closeCorner.Parent = closeButton
-
+closeButton.TextSize = 16
+local closeCorner = Instance.new("UICorner", closeButton)
+closeCorner.CornerRadius = UDim.new(0,5)
 closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy() -- Destroy the UI when the close button is clicked
+    tween(mainFrame, {BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, function()
+        screenGui:Destroy()
+    end)
 end)
 
--- Placeholder for Content
-local contentFrame = Instance.new("Frame")
-contentFrame.Name = "ContentFrame"
-contentFrame.Parent = mainFrame
-contentFrame.Size = UDim2.new(1, 0, 1, -30)
-contentFrame.Position = UDim2.new(0, 0, 0, 30)
-contentFrame.BackgroundTransparency = 1
-
--- Dragging Logic for the Main Frame
+-- Draggability using the title bar.
 local dragging = false
 local dragInput, dragStart, startPos
-
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
-
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
-
 titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
 end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- SLIDERS ------------------------------------------------------------------------------------------------------------------------------------
--- Function to Create an Enhanced Polished Slider
-local function createPolishedSlider(parent, position, size, min, max, defaultValue, callback)
-    -- Slider Container
-    local sliderFrame = Instance.new("Frame", parent)
-    sliderFrame.Size = size or UDim2.new(0, 300, 0, 60)
-    sliderFrame.Position = position or UDim2.new(0.5, -150, 0.1, 0)
-    sliderFrame.AnchorPoint = Vector2.new(0.5, 0)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    sliderFrame.ClipsDescendants = true
+-- Tab System Containers.
+local tabButtonsFrame = Instance.new("Frame")
+tabButtonsFrame.Name = "TabButtonsFrame"
+tabButtonsFrame.Parent = mainFrame
+tabButtonsFrame.Size = UDim2.new(1,0,0,40)
+tabButtonsFrame.Position = UDim2.new(0,0,0,30)
+tabButtonsFrame.BackgroundTransparency = 1
 
-    local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0, 10)
-    sliderCorner.Parent = sliderFrame
+local tabContentFrame = Instance.new("Frame")
+tabContentFrame.Name = "TabContentFrame"
+tabContentFrame.Parent = mainFrame
+tabContentFrame.Size = UDim2.new(1,0,1,-70)
+tabContentFrame.Position = UDim2.new(0,0,0,70)
+tabContentFrame.BackgroundTransparency = 1
 
-    -- Value Label
-    local valueLabel = Instance.new("TextLabel", sliderFrame)
-    valueLabel.Size = UDim2.new(1, 0, 0.4, 0)
-    valueLabel.Position = UDim2.new(0, 0, 0, 0)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.Text = "Value: " .. tostring(defaultValue)
-    valueLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-    valueLabel.TextScaled = true
-    valueLabel.Font = Enum.Font.GothamBold
-    valueLabel.TextStrokeTransparency = 0.9
+---------------------------
+-- Build the base window API.
+---------------------------
+local windowAPI = {}
+windowAPI.TabButtonsFrame = tabButtonsFrame
+windowAPI.TabContentFrame = tabContentFrame
+windowAPI.Tabs = {}
+windowAPI.ActiveTab = nil
 
-    -- Slider Bar Background (Track)
-    local sliderBar = Instance.new("Frame", sliderFrame)
-    sliderBar.Size = UDim2.new(0.9, 0, 0.25, 0)
-    sliderBar.Position = UDim2.new(0.05, 0, 0.6, 0)
-    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+local TweenService = game:GetService("TweenService")
 
-    local barCorner = Instance.new("UICorner", sliderBar)
-    barCorner.CornerRadius = UDim.new(0, 10)
-    barCorner.Parent = sliderBar
+-- A general tween helper function.
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+	local tweenInfo = TweenInfo.new(
+		duration or 0.15,
+		easingStyle or Enum.EasingStyle.Sine,
+		easingDirection or Enum.EasingDirection.Out,
+		0,
+		false,
+		delay or 0
+	)
+	local t = TweenService:Create(object, tweenInfo, properties)
+	if callback then
+		t.Completed:Connect(callback)
+	end
+	t:Play()
+	return t
+end
 
-    -- Slider Fill (Dynamic Fill Effect)
-    local sliderFill = Instance.new("Frame", sliderBar)
-    sliderFill.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
-    sliderFill.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
+local function createTab(windowAPI, tabName)
+	local tab = {}
+	tab.Name = tabName
+	tab.Sections = {}
 
-    local fillCorner = Instance.new("UICorner", sliderFill)
-    fillCorner.CornerRadius = UDim.new(0, 10)
-    fillCorner.Parent = sliderFill
+	---------------------------------------------------
+	-- Ensure the TabButtonsFrame has a horizontal layout
+	---------------------------------------------------
+	local tabButtonsFrame = windowAPI.TabButtonsFrame
+	if not tabButtonsFrame:FindFirstChildOfClass("UIListLayout") then
+		local listLayout = Instance.new("UIListLayout")
+		listLayout.FillDirection = Enum.FillDirection.Horizontal
+		listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		listLayout.Padding = UDim.new(0, 5)
+		listLayout.Parent = tabButtonsFrame
+	end
 
-    -- Slider Handle
-    local sliderHandle = Instance.new("Frame", sliderBar)
-    sliderHandle.Size = UDim2.new(0, 20, 1.5, 0) -- Handle is slightly larger than the bar for emphasis
-    sliderHandle.Position = UDim2.new(sliderFill.Size.X.Scale, -10, -0.25, 0)
-    sliderHandle.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
+	-----------------------------
+	-- Create the tab button:
+	-----------------------------
+	local tabButton = Instance.new("TextButton")
+	tabButton.Name = "TabButton"
+	tabButton.Text = tabName
+	tabButton.Size = UDim2.new(0, 100, 1, 0)
+	tabButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	tabButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+	tabButton.Font = Enum.Font.GothamBold
+	tabButton.TextSize = 16
+	tabButton.AutoButtonColor = false
+	tabButton.Parent = tabButtonsFrame
 
-    local handleCorner = Instance.new("UICorner", sliderHandle)
-    handleCorner.CornerRadius = UDim.new(1, 0) -- Fully rounded handle
-    handleCorner.Parent = sliderHandle
+	-- Add smooth rounded corners.
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = tabButton
 
-    -- Glow Effect for Handle
-    local glow = Instance.new("UIGradient", sliderHandle)
-    glow.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 190, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 220, 255))
-    }
+	-- Add an active indicator (a thin line at the bottom).
+	local indicator = Instance.new("Frame")
+	indicator.Name = "ActiveIndicator"
+	indicator.Size = UDim2.new(1, 0, 0, 2)
+	indicator.Position = UDim2.new(0, 0, 1, -2)
+	indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	indicator.BackgroundTransparency = 1  -- hidden by default
+	indicator.Parent = tabButton
 
-    -- Subtle Drop Shadow for Handle
-    local shadow = Instance.new("ImageLabel", sliderHandle)
-    shadow.Size = UDim2.new(1.5, 0, 1.5, 0)
-    shadow.Position = UDim2.new(-0.25, 0, -0.25, 0)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.7
+	-----------------------------
+	-- Create the tab content:
+	-----------------------------
+	local tabContent = Instance.new("ScrollingFrame")
+	tabContent.Name = "TabContent_" .. tabName
+	tabContent.Size = UDim2.new(1, -10, 1, -10)
+	tabContent.Position = UDim2.new(0, 5, 0, 5)
+	tabContent.BackgroundTransparency = 1
+	tabContent.ScrollBarThickness = 4
+	tabContent.Visible = false
+	tabContent.Parent = windowAPI.TabContentFrame
 
-    -- Dragging Logic
-    local userInputService = game:GetService("UserInputService")
-    local dragging = false
+	-- Add a layout to organize content vertically.
+	local listLayout = Instance.new("UIListLayout", tabContent)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Padding = UDim.new(0, 5)
 
-    sliderHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            -- Animate handle enlargement
-            sliderHandle:TweenSize(
-                UDim2.new(0, 25, 2, 0), -- Slightly enlarges during drag
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Back,
-                0.2,
-                true
-            )
+	-----------------------------
+	-- Add Hover & Active Effects:
+	-----------------------------
+	tabButton.MouseEnter:Connect(function()
+		if windowAPI.ActiveTab ~= tab then
+			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(70, 70, 70) }, 0.15)
+		end
+	end)
 
-            -- Pulsating Glow Effect
-            task.spawn(function()
-                while dragging do
-                    glow.Offset = Vector2.new(glow.Offset.X + 0.02, 0)
-                    task.wait(0.03)
-                end
-            end)
-        end
-    end)
+	tabButton.MouseLeave:Connect(function()
+		if windowAPI.ActiveTab ~= tab then
+			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(60, 60, 60) }, 0.15)
+		end
+	end)
 
-    userInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-            -- Restore handle size
-            sliderHandle:TweenSize(
-                UDim2.new(0, 20, 1.5, 0), -- Restore to normal size
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Back,
-                0.2,
-                true
-            )
-        end
-    end)
+	-- When a tab is clicked, tween its colors and indicator, hide other tabs’ content,
+	-- and mark this one as active.
+	tabButton.MouseButton1Click:Connect(function()
+		-- Loop through all tabs and reset them.
+		for _, t in pairs(windowAPI.Tabs) do
+			if t.Button then
+				tween(t.Button, { BackgroundColor3 = Color3.fromRGB(60, 60, 60) }, 0.15)
+				local ind = t.Button:FindFirstChild("ActiveIndicator")
+				if ind then
+					tween(ind, { BackgroundTransparency = 1 }, 0.15)
+				end
+			end
+			if t.Content then
+				t.Content.Visible = false
+			end
+		end
 
-    userInputService.InputChanged:Connect(function(mouseInput)
-        if dragging and mouseInput.UserInputType == Enum.UserInputType.MouseMovement then
-            local x = math.clamp(mouseInput.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
-            local percent = x / sliderBar.AbsoluteSize.X
-            local value = math.floor(min + percent * (max - min))
+		-- Mark this tab as active with a gentle color change and reveal its indicator.
+		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(80, 80, 80) }, 0.15)
+		if tabButton:FindFirstChild("ActiveIndicator") then
+			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.15)
+		end
 
-            -- Update Fill and Handle
-            sliderFill:TweenSize(
-                UDim2.new(percent, 0, 1, 0),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
-                0.05,
-                true
-            )
-            sliderHandle.Position = UDim2.new(percent, -10, -0.25, 0)
+		tabContent.Visible = true
+		windowAPI.ActiveTab = tab
+	end)
 
-            -- Update Value Label
-            valueLabel.Text = "Value: " .. tostring(value)
-            if callback then
-                callback(value) -- Trigger callback
+	-- If no active tab exists yet, initialize with this one.
+	if windowAPI.ActiveTab then
+		tabContent.Visible = false
+	else
+		windowAPI.ActiveTab = tab
+		tabContent.Visible = true
+		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(80, 80, 80) }, 0.15)
+		if tabButton:FindFirstChild("ActiveIndicator") then
+			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.15)
+		end
+	end
+
+	tab.Button = tabButton
+	tab.Content = tabContent
+
+	-----------------------------
+	-- Allow adding sections:
+	-----------------------------
+	function tab:AddSection(sectionName)
+		local section = {}
+		section.Name = sectionName
+
+		local sectionFrame = Instance.new("Frame")
+		sectionFrame.Name = "Section_" .. sectionName
+		sectionFrame.Size = UDim2.new(1, 0, 0, 100)  -- default height; adjust as needed
+		sectionFrame.BackgroundTransparency = 1
+		sectionFrame.Parent = tabContent
+
+		-- Use a layout to neatly stack elements.
+		local sectionLayout = Instance.new("UIListLayout", sectionFrame)
+		sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		sectionLayout.Padding = UDim.new(0, 5)
+
+		section.Frame = sectionFrame
+
+		-- These functions assume that you have createSlider, createToggle, and createButton defined.
+		function section:AddSlider(opts, callback)
+			createSlider(sectionFrame, opts, callback)
+		end
+		function section:AddToggle(opts, callback)
+			createToggle(sectionFrame, opts, callback)
+		end
+		function section:AddButton(opts, callback)
+			createButton(sectionFrame, opts, callback)
+		end
+
+		table.insert(tab.Sections, section)
+		return section
+	end
+
+	table.insert(windowAPI.Tabs, tab)
+	return tab
+end
+
+-- Add a new tab via your windowAPI.
+function windowAPI:AddTab(tabName)
+	return createTab(self, tabName)
+end
+
+---------------------------
+-- UI Visibility Toggle (RightShift)
+---------------------------
+local uiVisible = true
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightShift then
+        uiVisible = not uiVisible
+        local mainFrameRef = game.CoreGui:FindFirstChild("CometUI") and game.CoreGui.CometUI:FindFirstChild("MainFrame")
+        if mainFrameRef then
+            if uiVisible then
+                mainFrameRef.Visible = true
+                tween(mainFrameRef, {BackgroundTransparency = 0}, 0.3, Enum.EasingStyle.Sine)
+            else
+                tween(mainFrameRef, {BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.In, 0, function()
+                    mainFrameRef.Visible = false
+                end)
             end
         end
-    end)
-end
-
--- Add the Polished Slider to the UI
-createPolishedSlider(
-    contentFrame, -- Parent (from the base UI)
-    UDim2.new(0.5, 0, 0.1, 0), -- Position
-    UDim2.new(0, 300, 0, 60), -- Size
-    0, -- Min value
-    100, -- Max value
-    50, -- Default value
-    function(value) -- Callback
-        print("Slider value changed to:", value)
     end
-)
+end)
 
-
--- END OF SLIDERS ------------------------------------------------------------------------------------------------------------------------------
-
--- Function to Create a High-Quality Toggle with Subtle Animations
-local function createEnhancedToggle(parent, position, size, text, defaultValue, callback)
-    -- Toggle Frame
-    local toggleFrame = Instance.new("Frame", parent)
-    toggleFrame.Size = size or UDim2.new(0, 300, 0, 40)
-    toggleFrame.Position = position or UDim2.new(0.5, -150, 0.2, 0)
-    toggleFrame.AnchorPoint = Vector2.new(0.5, 0)
-    toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-    local toggleCorner = Instance.new("UICorner", toggleFrame)
-    toggleCorner.CornerRadius = UDim.new(0, 10)
-    toggleCorner.Parent = toggleFrame
-
-    -- Label Text
-    local toggleLabel = Instance.new("TextLabel", toggleFrame)
-    toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    toggleLabel.Position = UDim2.new(0, 10, 0, 0)
-    toggleLabel.BackgroundTransparency = 1
-    toggleLabel.Text = text or "Toggle"
-    toggleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-    toggleLabel.TextScaled = true
-    toggleLabel.Font = Enum.Font.GothamBold
-    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Toggle Background
-    local toggleBackground = Instance.new("Frame", toggleFrame)
-    toggleBackground.Size = UDim2.new(0, 50, 0, 20)
-    toggleBackground.Position = UDim2.new(0.9, -50, 0.5, -10)
-    toggleBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    toggleBackground.BorderSizePixel = 0
-
-    local backgroundCorner = Instance.new("UICorner", toggleBackground)
-    backgroundCorner.CornerRadius = UDim.new(1, 0)
-
-    -- Toggle Handle
-    local toggleHandle = Instance.new("Frame", toggleBackground)
-    toggleHandle.Size = UDim2.new(0, 18, 1, 0)
-    toggleHandle.Position = defaultValue and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
-    toggleHandle.BackgroundColor3 = Color3.fromRGB(70, 150, 250)
-    toggleHandle.BorderSizePixel = 0
-
-    local handleCorner = Instance.new("UICorner", toggleHandle)
-    handleCorner.CornerRadius = UDim.new(1, 0)
-
-    -- Add Blur Animation Frame
-    local blurFrame = Instance.new("Frame", toggleBackground)
-    blurFrame.Size = UDim2.new(1, 0, 1, 0)
-    blurFrame.BackgroundTransparency = 1 -- Start fully transparent
-    blurFrame.BackgroundColor3 = Color3.fromRGB(120, 180, 250)
-    blurFrame.Visible = false -- Start hidden
-
-    local blurCorner = Instance.new("UICorner", blurFrame)
-    blurCorner.CornerRadius = UDim.new(1, 0)
-
-    -- State Indicator
-    local isToggled = defaultValue or false
-    if isToggled then
-        toggleBackground.BackgroundColor3 = Color3.fromRGB(80, 160, 240) -- Subtle brightness increase
-        blurFrame.Visible = true
-    end
-
-    -- Smooth Toggle Function
-    local function toggleSwitch(state)
-        isToggled = state
-
-        -- Animate Handle Movement
-        local targetPosition = isToggled and UDim2.new(1, -20, 0, 0) or UDim2.new(0, 2, 0, 0)
-        local targetColor = isToggled and Color3.fromRGB(80, 160, 240) or Color3.fromRGB(60, 60, 60)
-
-        toggleHandle:TweenPosition(
-            targetPosition,
-            Enum.EasingDirection.Out,
-            Enum.EasingStyle.Quad,
-            0.3,
-            true
-        )
-
-        -- Subtle Bounce Effect for Handle
-        toggleHandle:TweenSize(
-            UDim2.new(0, 20, 1.1, 0), -- Slightly enlarge during movement
-            Enum.EasingDirection.Out,
-            Enum.EasingStyle.Back,
-            0.2,
-            true
-        )
-        task.wait(0.2)
-        toggleHandle:TweenSize(
-            UDim2.new(0, 18, 1, 0), -- Restore original size
-            Enum.EasingDirection.Out,
-            Enum.EasingStyle.Quad,
-            0.1,
-            true
-        )
-
-        -- Blur Animation (Fade In/Out)
-        blurFrame.Visible = true
-        blurFrame.BackgroundTransparency = isToggled and 0.6 or 1
-        game:GetService("TweenService"):Create(
-            blurFrame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundTransparency = isToggled and 0.6 or 1}
-        ):Play()
-
-        -- Background Color Animation
-        game:GetService("TweenService"):Create(
-            toggleBackground,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = targetColor}
-        ):Play()
-
-        -- Trigger Callback
-        if callback then
-            callback(isToggled)
+---------------------------
+-- Expose the Base Window API Globally via a CometUI module
+---------------------------
+local CometUI = {}
+function CometUI:CreateWindow(config)
+    if config then
+        if config.Title then
+            titleText.Text = config.Title
+        end
+        if config.Size then
+            mainFrame.Size = config.Size
+            mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
         end
     end
-
-    -- Click Event
-    toggleBackground.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            toggleSwitch(not isToggled)
-        end
-    end)
+    return windowAPI
 end
 
--- Example Toggle
-createEnhancedToggle(
-    contentFrame, -- Parent (from the base UI)
-    UDim2.new(0.5, 0, 0.3, 0), -- Position
-    UDim2.new(0, 300, 0, 40), -- Size
-    "Enable Feature", -- Label Text
-    false, -- Default State
-    function(state) -- Callback Function
-        print("Toggle state is now:", state)
-    end
-)
+_G.baseWindow = CometUI:CreateWindow({ Title = "Comet UI", Size = UDim2.new(0,500,0,400) })
+print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")
 
+-- Create the base window (using your existing CometUI:CreateWindow implementation)
+_G.baseWindow = CometUI:CreateWindow({
+    Title = "Comet UI",
+    Size = UDim2.new(0, 500, 0, 400)
+})
+
+-- Add a new tab named "Player"
+local playerTab = _G.baseWindow:AddTab("Player")
+
+-- Add a section to the "Player" tab
+local speedSection = playerTab:AddSection("Speed Settings")
+
+-- Add a highly animated slider
+speedSection:AddSlider({
+    Label = "Walk Speed",
+    Min = 16,
+    Max = 100,
+    Default = 16,
+    Size = UDim2.new(0, 300, 0, 60)
+}, function(value)
+    print("Walk Speed changed to:", value)
+    -- Example: update the player's WalkSpeed here
+end)
+
+-- Add an animated toggle
+speedSection:AddToggle({
+    Label = "toggle",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    print("toggle:", state)
+    -- Toggle god mode here
+end)
+
+-- Add an animated button with a ripple effect
+speedSection:AddButton({
+    Text = "button",
+    Size = UDim2.new(0, 300, 0, 50)
+}, function()
+    print("Reset button clicked!")
+    -- Reset functionality here
+end)
+
+-- Add a new tab named "Player"
+local playerTab = _G.baseWindow:AddTab("2")
+
+-- Add a section to the "Player" tab
+local speedSection = playerTab:AddSection("section")

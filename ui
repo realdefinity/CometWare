@@ -1,16 +1,5 @@
 --[[ 
-   Final Extensible CometUI Base Script (Fixed)
    =============================================
-   Features:
-     • Draggable UI window with a title bar and close button.
-     • Smooth fade animations when closing and when toggling UI visibility via RightShift.
-     • A tab system with a scrollable content area.
-     • API to add new tabs and, within each tab, add sections.
-     • Fully functional UI elements:
-         - Slider: displays its numeric value inside the slider.
-         - Toggle: with a sliding indicator.
-         - Button: with a ripple effect.
-         
    Usage Example (after running this script):
    
        local myTab = _G.baseWindow:AddTab("Player")
@@ -31,7 +20,7 @@
            print("Reset clicked!")
        end)
        
-   Enjoy your high-quality, extendable UI!
+   Made and developed by Definity.
 --]]
 
 ---------------------------
@@ -976,5 +965,5 @@ function CometUI:CreateWindow(config)
     return windowAPI
 end
 
-_G.baseWindow = CometUI:CreateWindow({ Title = "Comet UI", Size = UDim2.new(0,500,0,400) })
+_G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,500,0,400) })
 print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")

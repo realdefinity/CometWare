@@ -1,0 +1,11 @@
+-- COMET UI LOADER(BETA) 
+ loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/ui'))() -- u need this to use ui. 
+
+--[[ 
+======================================================================================
+add "local exampleTab = _G.baseWindow:AddTab("Tab Name") to create a tab. 
+======================================================================================
+add local exampleSection = exampleTab:AddSection("Section Name") to create a section. 
+======================================================================================
+- made with love by definity =)
+--]]

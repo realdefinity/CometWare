@@ -1,3 +1,111 @@
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "CometLoadingGui"
+loadingGui.Parent = game.CoreGui
+loadingGui.IgnoreGuiInset = true
+
+local bg = Instance.new("Frame")
+bg.Name = "Background"
+bg.Parent = loadingGui
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+bg.BackgroundTransparency = 0.3
+local bgGradient = Instance.new("UIGradient", bg)
+bgGradient.Rotation = 90
+bgGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(40,40,40)), ColorSequenceKeypoint.new(1, Color3.fromRGB(60,60,60))})
+
+local loadingFrame = Instance.new("Frame")
+loadingFrame.Name = "LoadingFrame"
+loadingFrame.Parent = loadingGui
+loadingFrame.Size = UDim2.new(0, 400, 0, 150)
+loadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+loadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+loadingFrame.BackgroundTransparency = 1
+
+local cometLabel = Instance.new("TextLabel")
+cometLabel.Name = "CometLabel"
+cometLabel.Parent = loadingFrame
+cometLabel.Size = UDim2.new(1, 0, 1, 0)
+cometLabel.BackgroundTransparency = 1
+cometLabel.Text = "Comet"
+cometLabel.Font = Enum.Font.GothamSemibold
+cometLabel.TextSize = 72
+cometLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+cometLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+cometLabel.TextStrokeTransparency = 0.5
+cometLabel.TextTransparency = 0
+cometLabel.ZIndex = 2
+
+spawn(function()
+	while cometLabel and cometLabel.Parent do
+		local pulseUp = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize = 80})
+		pulseUp:Play()
+		pulseUp.Completed:Wait()
+		local pulseDown = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize = 72})
+		pulseDown:Play()
+		pulseDown.Completed:Wait()
+	end
+end)
+
+local function spawnComet()
+	local comet = Instance.new("ImageLabel")
+	comet.Name = "FlyingComet"
+	comet.Size = UDim2.new(0, 40, 0, 20)
+	comet.BackgroundTransparency = 1
+	comet.Image = "rbxassetid://YOUR_ASSET_ID"
+	comet.ImageColor3 = Color3.fromRGB(200, 200, 200)
+	comet.ImageTransparency = 0
+	comet.Parent = loadingFrame
+	comet.ZIndex = 1
+	local startX = -50
+	local endX = 450
+	local yPos = 75 + math.random(-10,10)
+	comet.Position = UDim2.new(0, startX, 0, yPos)
+	local cometTween = TweenService:Create(comet, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, endX, 0, yPos), ImageTransparency = 1})
+	cometTween:Play()
+	
+	local trail = Instance.new("ImageLabel")
+	trail.Name = "CometTrail"
+	trail.Size = UDim2.new(0, 50, 0, 25)
+	trail.BackgroundTransparency = 1
+	trail.Image = comet.Image
+	trail.ImageColor3 = Color3.fromRGB(200,200,200)
+	trail.ImageTransparency = 0.2
+	trail.Parent = loadingFrame
+	trail.ZIndex = comet.ZIndex - 1
+	trail.Position = UDim2.new(0, startX - 10, 0, yPos)
+	TweenService:Create(trail, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, endX - 10, 0, yPos), ImageTransparency = 1}):Play()
+	delay(0.8, function() trail:Destroy() end)
+	delay(0.8, function() comet:Destroy() end)
+end
+
+spawn(function()
+	for i = 1, 3 do
+		spawnComet()
+		wait(1)
+	end
+end)
+
+spawn(function()
+	while bgGradient do
+		TweenService:Create(bgGradient, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(math.random(-50,50), math.random(-50,50))}):Play()
+		wait(2)
+	end
+end)
+
+wait(3)
+
+local fadeTween = TweenService:Create(loadingFrame, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
+fadeTween:Play()
+local fadeBgTween = TweenService:Create(bg, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
+fadeBgTween:Play()
+fadeBgTween.Completed:Wait()
+
+StarterGui:SetCore("SendNotification", {Title = "Comet Loaded.", Text = "Thanks for using comet!", Duration = 5})
+loadingGui:Destroy()
 
 ---------------------------
 -- SERVICES & UTILITY FUNCTIONS
@@ -28,53 +136,17 @@ end
 ---------------------------
 
 
---[[ 
-  Insert the following function into your WindowAPI code.
-  For example, in your WindowAPI module you might have:
-  
-  function section:AddSlider(opts, callback)
-      createSlider(section.Frame, opts, callback)
-  end
---]]
-
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-
---------------------------------------------------
--- Tween helper (for non‐continuous animations)
---------------------------------------------------
-local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
-    local info = TweenInfo.new(
-        duration or 0.25,
-        easingStyle or Enum.EasingStyle.Quint,
-        easingDirection or Enum.EasingDirection.Out,
-        0,
-        false,
-        delay or 0
-    )
-    local tw = TweenService:Create(object, info, properties)
-    if callback then
-        tw.Completed:Connect(callback)
-    end
-    tw:Play()
-    return tw
-end
-
---------------------------------------------------
--- createSlider function
---------------------------------------------------
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 --------------------------------------------------
--- Tween helper (for smooth transitions)
+-- Helper Tween Function
 --------------------------------------------------
 local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
 	local tweenInfo = TweenInfo.new(
 		duration or 0.25,
-		easingStyle or Enum.EasingStyle.Exponential,
+		easingStyle or Enum.EasingStyle.Quad,
 		easingDirection or Enum.EasingDirection.Out,
 		0,
 		false,
@@ -89,7 +161,7 @@ local function tween(object, properties, duration, easingStyle, easingDirection,
 end
 
 --------------------------------------------------
--- Create a smooth, clean slider control
+-- createSlider Function (Polished Version)
 --------------------------------------------------
 local function createSlider(parent, opts, callback)
 	opts = opts or {}
@@ -99,49 +171,89 @@ local function createSlider(parent, opts, callback)
 	local sliderLabel = opts.Label or "Slider"
 	local initPercent = (defaultValue - min) / (max - min)
 	
-	-- Outer container (slider) – now a bit smaller (height 100 instead of 130)
+	-- If the slider is meant to be closely grouped, reduce height slightly.
+	local sliderHeight = opts.Organization and 80 or 100
+	
+	-- Outer Container (Slider)
 	local slider = Instance.new("Frame")
 	slider.Name = "Slider"
-	slider.Size = opts.Size or UDim2.new(0, 300, 0, 100)
-	slider.BackgroundTransparency = 1
+	slider.Size = opts.Size or UDim2.new(0, 320, 0, sliderHeight)
+	slider.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  -- dark background for contrast
+	slider.BackgroundTransparency = 0
 	slider.ClipsDescendants = true
 	slider.ZIndex = 10
 	slider.Parent = parent
 
-	-- UIScale for a subtle pop on hover
+	-- Drop Shadow Effect (for container depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = slider.Size
+	shadow.Position = UDim2.new(0, 4, 0, 4)
+	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	shadow.BackgroundTransparency = 0.5
+	shadow.BorderSizePixel = 0
+	shadow.ZIndex = slider.ZIndex - 1
+	shadow.Parent = slider
+
+	-- UIStroke (Container Border)
+	local containerStroke = Instance.new("UIStroke")
+	containerStroke.Parent = slider
+	containerStroke.Thickness = 2
+	containerStroke.Color = Color3.fromRGB(100, 100, 100)
+	containerStroke.Transparency = 0.2
+
+	-- Rounded Corners for container
+	local containerCorner = Instance.new("UICorner", slider)
+	containerCorner.CornerRadius = UDim.new(0, 10)
+
+	-- UIScale for subtle hover effect
 	local scaleObj = Instance.new("UIScale", slider)
 	scaleObj.Scale = 1
 
-	-- UIStroke for the animated border
-	local containerStroke = Instance.new("UIStroke", slider)
-	containerStroke.Color = Color3.fromRGB(100, 100, 100)
-	containerStroke.Thickness = 2
-	containerStroke.Transparency = 0.3
-
-	-- (Removed the Shine overlay entirely for a cleaner look.)
-
 	-----------------------------------
-	-- Content Container (holds all UI elements)
+	-- Content Container
 	-----------------------------------
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.Size = UDim2.new(1, 0, 1, 0)
 	content.Position = UDim2.new(0, 0, 0, 0)
 	content.BackgroundTransparency = 1
-	-- Place content above the border effects.
 	content.ZIndex = slider.ZIndex + 1
 	content.Parent = slider
 
+	-- Padding for content; slightly tighter if Organization is set.
 	local padding = Instance.new("UIPadding", content)
-	padding.PaddingLeft = UDim.new(0, 8)
-	padding.PaddingRight = UDim.new(0, 8)
-	padding.PaddingTop = UDim.new(0, 8)
-	padding.PaddingBottom = UDim.new(0, 8)
+	if opts.Organization then
+		padding.PaddingLeft = UDim.new(0, 6)
+		padding.PaddingRight = UDim.new(0, 6)
+		padding.PaddingTop = UDim.new(0, 4)
+		padding.PaddingBottom = UDim.new(0, 4)
+	else
+		padding.PaddingLeft = UDim.new(0, 10)
+		padding.PaddingRight = UDim.new(0, 10)
+		padding.PaddingTop = UDim.new(0, 10)
+		padding.PaddingBottom = UDim.new(0, 10)
+	end
 
 	local layout = Instance.new("UIListLayout", content)
 	layout.FillDirection = Enum.FillDirection.Vertical
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 5)
+	layout.Padding = UDim.new(0, 4)
+
+	-- Optional Organization Header (for grouping)
+	if opts.Organization and opts.OrgLabel then
+		local orgLabel = Instance.new("TextLabel")
+		orgLabel.Name = "OrganizationLabel"
+		orgLabel.Size = UDim2.new(1, 0, 0, 20)
+		orgLabel.BackgroundTransparency = 1
+		orgLabel.Text = opts.OrgLabel
+		orgLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+		orgLabel.Font = Enum.Font.GothamBold
+		orgLabel.TextSize = 18
+		orgLabel.TextXAlignment = Enum.TextXAlignment.Left
+		orgLabel.ZIndex = content.ZIndex
+		orgLabel.Parent = content
+	end
 
 	-- Title Label
 	local titleLabel = Instance.new("TextLabel")
@@ -171,24 +283,26 @@ local function createSlider(parent, opts, callback)
 	valueLabel.ZIndex = content.ZIndex
 	valueLabel.Parent = content
 
-	-- Track (slider bar)
+	-- Track (Slider Bar)
 	local track = Instance.new("Frame")
 	track.Name = "Track"
-	track.Size = UDim2.new(1, -20, 0, 12)  -- inset 10px each side
+	track.Size = UDim2.new(1, -20, 0, 12)
 	track.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	track.BorderSizePixel = 0
 	track.ZIndex = content.ZIndex
 	track.Parent = content
+
 	local trackCorner = Instance.new("UICorner", track)
 	trackCorner.CornerRadius = UDim.new(0, 6)
+
 	local trackGradient = Instance.new("UIGradient", track)
-	trackGradient.Color = ColorSequence.new({
+	trackGradient.Color = ColorSequence.new{
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 80, 80)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-	})
+	}
 	trackGradient.Rotation = 90
 
-	-- Fill inside the track (indicates current value)
+	-- Fill inside the Track
 	local fill = Instance.new("Frame")
 	fill.Name = "Fill"
 	fill.Size = UDim2.new(initPercent, 0, 1, 0)
@@ -196,13 +310,15 @@ local function createSlider(parent, opts, callback)
 	fill.BorderSizePixel = 0
 	fill.ZIndex = track.ZIndex + 1
 	fill.Parent = track
+
 	local fillCorner = Instance.new("UICorner", fill)
 	fillCorner.CornerRadius = UDim.new(0, 6)
+
 	local fillGradient = Instance.new("UIGradient", fill)
-	fillGradient.Color = ColorSequence.new({
+	fillGradient.Color = ColorSequence.new{
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 180, 255)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 120, 255))
-	})
+	}
 	fillGradient.Rotation = 90
 
 	-- Draggable Handle
@@ -217,8 +333,10 @@ local function createSlider(parent, opts, callback)
 	handle.Text = ""
 	handle.ZIndex = track.ZIndex + 2
 	handle.Parent = track
+
 	local handleCorner = Instance.new("UICorner", handle)
 	handleCorner.CornerRadius = UDim.new(1, 0)
+
 	local handleStroke = Instance.new("UIStroke", handle)
 	handleStroke.Color = Color3.fromRGB(0, 150, 255)
 	handleStroke.Thickness = 2
@@ -249,11 +367,24 @@ local function createSlider(parent, opts, callback)
 		local mouseX = input.Position.X
 		local pos = math.clamp(mouseX - absX, 0, width)
 		local percent = pos / width
-		targetPercent = percent
-		local value = math.floor(min + (max - min) * percent)
-		valueLabel.Text = tostring(value)
-		if callback then
-			callback(value)
+		
+		-- If snapping is enabled, round the value to the nearest increment.
+		if opts.Snap and opts.Increment then
+			local rawValue = min + (max - min) * percent
+			local snappedValue = math.floor(rawValue / opts.Increment + 0.5) * opts.Increment
+			percent = (snappedValue - min) / (max - min)
+			valueLabel.Text = tostring(snappedValue)
+			targetPercent = percent
+			if callback then
+				callback(snappedValue)
+			end
+		else
+			targetPercent = percent
+			local value = math.floor(min + (max - min) * percent)
+			valueLabel.Text = tostring(value)
+			if callback then
+				callback(value)
+			end
 		end
 	end
 
@@ -288,58 +419,20 @@ local function createSlider(parent, opts, callback)
 		end
 	end)
 
-	-----------------------------------
-	-- Container Hover Animation (professional and subtle)
-	-----------------------------------
-	-- On MouseEnter, smoothly change the border (thicker and blue) and scale up a bit.
-	slider.Active = true
-	slider.MouseEnter:Connect(function()
-		tween(containerStroke, {Thickness = 3, Color = Color3.fromRGB(0, 150, 255), Transparency = 0}, 0.25)
-		tween(scaleObj, {Scale = 1.02}, 0.25)
-	end)
-	slider.MouseLeave:Connect(function()
-		tween(containerStroke, {Thickness = 2, Color = Color3.fromRGB(100, 100, 100), Transparency = 0.3}, 0.25)
-		tween(scaleObj, {Scale = 1}, 0.25)
-	end)
-
 	return slider
 end
 
 
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 --------------------------------------------------
--- Helper tween function using exponential easing.
---------------------------------------------------
-local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
-    local info = TweenInfo.new(
-        duration or 0.3,
-        easingStyle or Enum.EasingStyle.Exponential,
-        easingDirection or Enum.EasingDirection.Out,
-        0,
-        false,
-        delay or 0
-    )
-    local tw = TweenService:Create(object, info, properties)
-    if callback then
-        tw.Completed:Connect(callback)
-    end
-    tw:Play()
-    return tw
-end
-
---------------------------------------------------
--- Redesigned Toggle Function with Animated Border
---------------------------------------------------
-local TweenService = game:GetService("TweenService")
-
---------------------------------------------------
--- Tween helper (for smooth transitions)
+-- Helper Tween Function
 --------------------------------------------------
 local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
 	local tweenInfo = TweenInfo.new(
 		duration or 0.25,
-		easingStyle or Enum.EasingStyle.Exponential,
+		easingStyle or Enum.EasingStyle.Quad,
 		easingDirection or Enum.EasingDirection.Out,
 		0,
 		false,
@@ -354,27 +447,45 @@ local function tween(object, properties, duration, easingStyle, easingDirection,
 end
 
 --------------------------------------------------
--- Create a smooth, clean toggle control
+-- createToggle Function (Repositioned for Better Layout)
 --------------------------------------------------
 local function createToggle(parent, opts, callback)
 	opts = opts or {}
 	local labelText = opts.Label or "Toggle"
 	local defaultState = opts.Default or false
 
-	-- Container: Use a UIListLayout to align the text and toggle track horizontally.
+	-- Outer Container: Fixed size for proper layout.
 	local container = Instance.new("Frame")
 	container.Name = "ToggleContainer"
 	container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
-	container.BackgroundTransparency = 1
+	container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	container.BackgroundTransparency = 0
 	container.Parent = parent
 
-	local layout = Instance.new("UIListLayout", container)
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-	layout.VerticalAlignment = Enum.VerticalAlignment.Center
-	layout.Padding = UDim.new(0, 10)
+	-- Drop Shadow for depth.
+	local shadow = Instance.new("Frame")
+	shadow.Name = "ToggleShadow"
+	shadow.Size = container.Size
+	shadow.Position = UDim2.new(0, 4, 0, 4)
+	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	shadow.BackgroundTransparency = 0.5
+	shadow.BorderSizePixel = 0
+	shadow.ZIndex = container.ZIndex - 1
+	shadow.Parent = container
 
-	-- Label (left side) with improved styling.
+	-- Border using UIStroke.
+	local containerStroke = Instance.new("UIStroke")
+	containerStroke.Parent = container
+	containerStroke.Thickness = 2
+	containerStroke.Color = Color3.fromRGB(100, 100, 100)
+	containerStroke.Transparency = 0.3
+
+	-- Rounded corners for container.
+	local containerCorner = Instance.new("UICorner", container)
+	containerCorner.CornerRadius = UDim.new(0, 10)
+
+	-- Manually position the label and toggle track.
+	-- Label: occupies most of the container on the left.
 	local label = Instance.new("TextLabel")
 	label.Name = "ToggleLabel"
 	label.BackgroundTransparency = 1
@@ -383,25 +494,28 @@ local function createToggle(parent, opts, callback)
 	label.TextSize = opts.TextSize or 20
 	label.TextColor3 = opts.TextColor or Color3.fromRGB(240, 240, 240)
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.AutomaticSize = Enum.AutomaticSize.X
-	-- Optional text stroke for better clarity.
+	-- Leave space on the right (about 80 pixels) for the toggle track.
+	label.Size = UDim2.new(1, -80, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
 	label.TextStrokeColor3 = opts.TextStrokeColor or Color3.new(0, 0, 0)
 	label.TextStrokeTransparency = opts.TextStrokeTransparency or 0.8
 	label.Parent = container
 
-	-- Toggle track (right side)
+	-- Toggle track: fixed size on the right.
 	local track = Instance.new("Frame")
 	track.Name = "ToggleTrack"
 	track.Size = UDim2.new(0, 60, 0, 30)
 	track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	track.BorderSizePixel = 0
 	track.Parent = container
+	-- Position the track so that it is vertically centered with a margin from the right.
+	track.Position = UDim2.new(1, -70, 0.5, -15)
 
-	-- Rounded corners on the track
+	-- Rounded corners on the track.
 	local trackCorner = Instance.new("UICorner", track)
 	trackCorner.CornerRadius = UDim.new(0, 15)
 
-	-- Subtle gradient on the track for depth.
+	-- Subtle gradient on the track.
 	local trackGradient = Instance.new("UIGradient", track)
 	trackGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
@@ -415,17 +529,17 @@ local function createToggle(parent, opts, callback)
 	borderStroke.Thickness = 2
 	borderStroke.Transparency = 0.5
 
-	-- Add a UIScale to the track to allow a subtle scale animation on hover.
+	-- UIScale for subtle hover effect on the track.
 	local trackScale = Instance.new("UIScale", track)
 	trackScale.Scale = 1
 
-	-- Glow frame for extra visual flair when toggled on.
+	-- Glow frame for visual flair when toggled on.
 	local glow = Instance.new("Frame")
 	glow.Name = "ToggleGlow"
 	glow.Size = UDim2.new(1, 6, 1, 6)
 	glow.Position = UDim2.new(0, -3, 0, -3)
 	glow.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-	glow.BackgroundTransparency = 1  -- starts hidden
+	glow.BackgroundTransparency = 1  -- initially hidden
 	glow.Parent = track
 	local glowCorner = Instance.new("UICorner", glow)
 	glowCorner.CornerRadius = UDim.new(0, 15)
@@ -434,29 +548,29 @@ local function createToggle(parent, opts, callback)
 	local handle = Instance.new("Frame")
 	handle.Name = "ToggleHandle"
 	handle.Size = UDim2.new(0, 26, 0, 26)
-	-- Set the handle color depending on state.
+	-- Set handle color depending on state.
 	handle.BackgroundColor3 = defaultState and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
 	handle.BorderSizePixel = 0
 	handle.Parent = track
 	local handleCorner = Instance.new("UICorner", handle)
 	handleCorner.CornerRadius = UDim.new(1, 0)
 
+	-- Optional: Add a subtle shadow for the handle.
+	local handleShadow = Instance.new("ImageLabel")
+	handleShadow.Name = "HandleShadow"
+	handleShadow.Size = handle.Size
+	handleShadow.Position = UDim2.new(0, 2, 0, 2)
+	handleShadow.BackgroundTransparency = 1
+	handleShadow.Image = "rbxassetid://131604521"  -- change to your desired asset ID
+	handleShadow.ImageColor3 = Color3.new(0, 0, 0)
+	handleShadow.ImageTransparency = 0.5
+	handleShadow.Parent = handle
+	handleShadow.ZIndex = handle.ZIndex - 1
+
 	-- Define positions for off and on states.
 	local offPosition = UDim2.new(0, 2, 0.5, -13)
 	local onPosition  = UDim2.new(1, -28, 0.5, -13)
 	handle.Position = defaultState and onPosition or offPosition
-
-	-- Optional: Add a subtle shadow for the handle.
-	local shadow = Instance.new("ImageLabel")
-	shadow.Name = "HandleShadow"
-	shadow.Size = handle.Size
-	shadow.Position = UDim2.new(0, 2, 0, 2)
-	shadow.BackgroundTransparency = 1
-	shadow.Image = "rbxassetid://131604521"  -- Replace with your asset if desired
-	shadow.ImageColor3 = Color3.new(0, 0, 0)
-	shadow.ImageTransparency = 0.5
-	shadow.Parent = handle
-	shadow.ZIndex = handle.ZIndex - 1
 
 	-- Current state of the toggle.
 	local state = defaultState
@@ -467,13 +581,17 @@ local function createToggle(parent, opts, callback)
 	local function updateToggle(newState)
 		state = newState
 		if state then
+			-- Animate handle to "on" position.
 			tween(handle, {Position = onPosition}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+			-- Update colors for the active state.
 			tween(track, {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}, 0.25)
 			tween(handle, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.25)
 			tween(glow, {BackgroundTransparency = 0.4}, 0.25)
 			tween(borderStroke, {Color = Color3.fromRGB(0, 180, 255), Thickness = 4, Transparency = 0}, 0.25)
 		else
+			-- Animate handle to "off" position.
 			tween(handle, {Position = offPosition}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+			-- Revert colors.
 			tween(track, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.25)
 			tween(handle, {BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.25)
 			tween(glow, {BackgroundTransparency = 1}, 0.25)
@@ -485,7 +603,7 @@ local function createToggle(parent, opts, callback)
 	end
 
 	--------------------------------------------------
-	-- Connect mouse input: Toggle when the track is clicked.
+	-- Connect mouse input: Toggle when track is clicked.
 	--------------------------------------------------
 	track.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -494,11 +612,10 @@ local function createToggle(parent, opts, callback)
 	end)
 
 	--------------------------------------------------
-	-- Hover animations for the toggle track (a subtle, professional effect)
+	-- Hover animations for a polished look.
 	--------------------------------------------------
 	track.MouseEnter:Connect(function()
 		tween(trackScale, {Scale = 1.03}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		-- Adjust the border slightly on hover.
 		if state then
 			tween(borderStroke, {Thickness = 4.5, Transparency = 0}, 0.15)
 		else
@@ -507,17 +624,15 @@ local function createToggle(parent, opts, callback)
 	end)
 	track.MouseLeave:Connect(function()
 		tween(trackScale, {Scale = 1}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		-- Return the border to its normal settings.
 		if state then
 			tween(borderStroke, {Thickness = 4, Transparency = 0}, 0.15)
 		else
 			tween(borderStroke, {Thickness = 2, Transparency = 0.5}, 0.15)
 		end
 	end)
-
+	
 	return container
 end
-
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -640,112 +755,200 @@ end
 ---------------------------
 -- Base UI Window & Tab System with Sections
 ---------------------------
--- If an older version exists, remove it.
+-- Upgraded MainFrame with Minimize & Close Buttons, Pulsing Border, and Smooth Dragging
+
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+-- Remove any previous UI.
 if game.CoreGui:FindFirstChild("CometUI") then
     game.CoreGui:FindFirstChild("CometUI"):Destroy()
 end
 
+-- Create ScreenGui.
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CometUI"
 screenGui.Parent = game.CoreGui
 screenGui.IgnoreGuiInset = true
 
+--------------------------------------------------
+-- Main Frame (No Drop Shadow; Pulsing Border instead)
+--------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0,500,0,400)
-mainFrame.Position = UDim2.new(0.5,0,0.5,0)
-mainFrame.AnchorPoint = Vector2.new(0.5,0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-mainFrame.BorderSizePixel = 0
-local mainCorner = Instance.new("UICorner", mainFrame)
-mainCorner.CornerRadius = UDim.new(0,12)
+mainFrame.Size = UDim2.new(0, 500, 0, 400)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
+mainFrame.BackgroundTransparency = 0
 local mainGradient = Instance.new("UIGradient", mainFrame)
+mainGradient.Rotation = 90
 mainGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45,45,45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,35))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(38, 38, 38))
 }
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Thickness = 3
+mainStroke.Color = Color3.fromRGB(80, 80, 80)
+mainStroke.Transparency = 0.2
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0, 16)
 
+-- Pulsing Border Effect (tween the stroke's Color continuously)
+spawn(function()
+    while mainFrame and mainFrame.Parent do
+        tween(mainStroke, {Color = Color3.fromRGB(0, 150, 255)}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        wait(1.5)
+        tween(mainStroke, {Color = Color3.fromRGB(80, 80, 80)}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        wait(1.5)
+    end
+end)
+
+--------------------------------------------------
+-- Title Bar with Minimize & Close Buttons
+--------------------------------------------------
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Parent = mainFrame
-titleBar.Size = UDim2.new(1,0,0,30)
-titleBar.BackgroundColor3 = Color3.fromRGB(30,30,30)
+titleBar.Size = UDim2.new(1, 0, 0, 50)
+titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 titleBar.BorderSizePixel = 0
 local titleBarCorner = Instance.new("UICorner", titleBar)
-titleBarCorner.CornerRadius = UDim.new(0,12)
+titleBarCorner.CornerRadius = UDim.new(0, 16)
+local titleGradient = Instance.new("UIGradient", titleBar)
+titleGradient.Rotation = 90
+titleGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
+}
+
+-- Accent Line (underline)
+local accentLine = Instance.new("Frame")
+accentLine.Name = "AccentLine"
+accentLine.Parent = titleBar
+accentLine.Size = UDim2.new(1, 0, 0, 3)
+accentLine.Position = UDim2.new(0, 0, 1, -3)
+accentLine.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+accentLine.BorderSizePixel = 0
 
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Parent = titleBar
-titleText.Size = UDim2.new(1,0,1,0)
+titleText.Size = UDim2.new(1, -120, 1, 0)  -- leave room for buttons
+titleText.Position = UDim2.new(0, 20, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "CometWare"
-titleText.TextColor3 = Color3.fromRGB(240,240,240)
-titleText.Font = Enum.Font.GothamBold
-titleText.TextSize = 20
-titleText.TextStrokeTransparency = 0.85
-titleText.Position = UDim2.new(0.02,0,0,0)
+titleText.TextColor3 = Color3.fromRGB(240, 240, 240)
+titleText.Font = Enum.Font.GothamSemibold
+titleText.TextSize = 28
+titleText.TextStrokeTransparency = 0.7
+titleText.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Minimize Button
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Parent = titleBar
+minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+minimizeButton.Position = UDim2.new(1, -70, 0, 10)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimizeButton.Text = "–"
+minimizeButton.Font = Enum.Font.GothamSemibold
+minimizeButton.TextSize = 20
+minimizeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+local minCorner = Instance.new("UICorner", minimizeButton)
+minCorner.CornerRadius = UDim.new(0, 5)
+minimizeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    StarterGui:SetCore("SendNotification", {
+        Title = "UI Minimized",
+        Text = "Press K to restore the UI.",
+        Duration = 5,
+    })
+end)
+
+-- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = titleBar
-closeButton.Size = UDim2.new(0,30,0,30)
-closeButton.Position = UDim2.new(1,-30,0,0)
-closeButton.BackgroundColor3 = Color3.fromRGB(200,80,80)
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -30, 0, 10)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(240,240,240)
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 16
+closeButton.Font = Enum.Font.GothamSemibold
+closeButton.TextSize = 20
+closeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
 local closeCorner = Instance.new("UICorner", closeButton)
-closeCorner.CornerRadius = UDim.new(0,5)
+closeCorner.CornerRadius = UDim.new(0, 5)
 closeButton.MouseButton1Click:Connect(function()
-    tween(mainFrame, {BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, function()
-        screenGui:Destroy()
-    end)
+    screenGui:Destroy()
 end)
 
--- Draggability using the title bar.
-local dragging = false
-local dragInput, dragStart, startPos
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Tab System Containers.
+--------------------------------------------------
+-- Tab System Containers
+--------------------------------------------------
 local tabButtonsFrame = Instance.new("Frame")
 tabButtonsFrame.Name = "TabButtonsFrame"
 tabButtonsFrame.Parent = mainFrame
-tabButtonsFrame.Size = UDim2.new(1,0,0,40)
-tabButtonsFrame.Position = UDim2.new(0,0,0,30)
+tabButtonsFrame.Size = UDim2.new(1, 0, 0, 40)
+tabButtonsFrame.Position = UDim2.new(0, 0, 0, 60)
 tabButtonsFrame.BackgroundTransparency = 1
 
 local tabContentFrame = Instance.new("Frame")
 tabContentFrame.Name = "TabContentFrame"
 tabContentFrame.Parent = mainFrame
-tabContentFrame.Size = UDim2.new(1,0,1,-70)
-tabContentFrame.Position = UDim2.new(0,0,0,70)
+tabContentFrame.Size = UDim2.new(1, 0, 1, -70)
+tabContentFrame.Position = UDim2.new(0, 0, 0, 120)
 tabContentFrame.BackgroundTransparency = 1
 
----------------------------
--- Build the base window API.
----------------------------
+--------------------------------------------------
+-- Smooth Dragging Integration (No Drop Shadow)
+--------------------------------------------------
+local dragging = false
+local dragInput, dragStart, startPos
+local targetPos = mainFrame.Position
+
+-- When the title bar receives a mouse down event:
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        targetPos = startPos  -- reset target when drag begins
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+-- Track the mouse movement on the title bar.
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if dragging then
+        mainFrame.Position = mainFrame.Position:Lerp(targetPos, 0.2)
+    end
+end)
+
+--------------------------------------------------
+-- Base Window API
+--------------------------------------------------
 local windowAPI = {}
 windowAPI.TabButtonsFrame = tabButtonsFrame
 windowAPI.TabContentFrame = tabContentFrame
@@ -784,7 +987,9 @@ local function createTab(windowAPI, tabName)
 	tab.Sections = {}
 
 	---------------------------------------------------
-	-- Ensure the TabButtonsFrame has a horizontal layout
+	-- Ensure the TabButtonsFrame has a horizontal layout.
+	-- (Make sure that your TabButtonsFrame is positioned
+	-- under the title bar in your main UI.)
 	---------------------------------------------------
 	local tabButtonsFrame = windowAPI.TabButtonsFrame
 	if not tabButtonsFrame:FindFirstChildOfClass("UIListLayout") then
@@ -802,21 +1007,19 @@ local function createTab(windowAPI, tabName)
 	local tabButton = Instance.new("TextButton")
 	tabButton.Name = "TabButton"
 	tabButton.Text = tabName
-	tabButton.Size = UDim2.new(0, 120, 1, 0) -- a bit wider for a cleaner look
-
-	-- Use a cool blue–gray color that pops on a black background.
-	tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-	tabButton.TextColor3 = Color3.new(1, 1, 1)
+	tabButton.Size = UDim2.new(0, 120, 1, 0) -- fixed width; height is inherited from the TabButtonsFrame
+	tabButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)  -- default light gray
+	tabButton.TextColor3 = Color3.fromRGB(30, 30, 30)           -- dark text for contrast
 	tabButton.Font = Enum.Font.GothamBold
 	tabButton.TextSize = 16
 	tabButton.AutoButtonColor = false
 	tabButton.Parent = tabButtonsFrame
-
+	
 	-- Add a subtle UIGradient for depth.
 	local buttonGradient = Instance.new("UIGradient")
 	buttonGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 80, 120)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 70, 110))
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 200, 200)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 190, 190))
 	})
 	buttonGradient.Rotation = 90
 	buttonGradient.Parent = tabButton
@@ -831,7 +1034,7 @@ local function createTab(windowAPI, tabName)
 	indicator.Name = "ActiveIndicator"
 	indicator.Size = UDim2.new(1, 0, 0, 3)
 	indicator.Position = UDim2.new(0, 0, 1, -3)
-	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)  -- blue accent
 	indicator.BackgroundTransparency = 1  -- hidden by default
 	indicator.Parent = tabButton
 
@@ -841,73 +1044,73 @@ local function createTab(windowAPI, tabName)
 	scaleObj.Parent = tabButton
 
 	-----------------------------
-	-- Add Hover & Active Effects:
+	-- Smoother Hover & Active Effects:
 	-----------------------------
+	-- (Using 0.2 seconds for smoother transitions.)
 	tabButton.MouseEnter:Connect(function()
-		-- Only animate if this tab isn't active.
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, { Scale = 1.05 }, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(100, 100, 160) }, 0.15)
+			tween(scaleObj, { Scale = 1.05 }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(220, 220, 220) }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		end
 	end)
 
 	tabButton.MouseLeave:Connect(function()
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, { Scale = 1 }, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(80, 80, 120) }, 0.15)
+			tween(scaleObj, { Scale = 1 }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(200, 200, 200) }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		end
 	end)
 
--- When a tab is clicked, animate its active state, hide other tabs’ content,
--- and mark this one as active.
-tabButton.MouseButton1Click:Connect(function()
-    -- Reset all tabs.
-    for _, t in pairs(windowAPI.Tabs) do
-        if t.Button then
-            tween(t.Button, { BackgroundColor3 = Color3.fromRGB(80, 80, 120) }, 0.15)
-            local ind = t.Button:FindFirstChild("ActiveIndicator")
-            if ind then
-                tween(ind, { BackgroundTransparency = 1 }, 0.15)
-            end
-            -- Reset scale.
-            local s = t.Button:FindFirstChildOfClass("UIScale")
-            if s then
-                tween(s, { Scale = 1 }, 0.15)
-            end
-        end
-        if t.Content then
-            t.Content.Visible = false
-        end
-    end
+	-- When a tab is clicked, animate its active state, hide other tabs’ content,
+	-- and mark this one as active.
+	tabButton.MouseButton1Click:Connect(function()
+		-- Reset all tabs.
+		for _, t in pairs(windowAPI.Tabs) do
+			if t.Button then
+				tween(t.Button, { BackgroundColor3 = Color3.fromRGB(200, 200, 200) }, 0.2)
+				local ind = t.Button:FindFirstChild("ActiveIndicator")
+				if ind then
+					tween(ind, { BackgroundTransparency = 1 }, 0.2)
+				end
+				-- Reset scale.
+				local s = t.Button:FindFirstChildOfClass("UIScale")
+				if s then
+					tween(s, { Scale = 1 }, 0.2)
+				end
+			end
+			if t.Content then
+				t.Content.Visible = false
+			end
+		end
 
-    -- Activate this tab.
-    tween(tabButton, { BackgroundColor3 = Color3.fromRGB(110, 110, 180) }, 0.15)
-    if tabButton:FindFirstChild("ActiveIndicator") then
-        tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.15)
-    end
+		-- Activate this tab.
+		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(240, 240, 240) }, 0.2)
+		if tabButton:FindFirstChild("ActiveIndicator") then
+			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.2)
+		end
 
-    -- Use the stored tab content.
-    tab.Content.Visible = true
-    windowAPI.ActiveTab = tab
-end)
-
+		-- Show this tab's content.
+		tab.Content.Visible = true
+		windowAPI.ActiveTab = tab
+	end)
 
 	-- If no active tab exists yet, initialize with this one.
 	local initActive = not windowAPI.ActiveTab
 	if initActive then
 		windowAPI.ActiveTab = tab
-		tabContentVisible = true
-		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(110, 110, 180) }, 0.15)
+		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(240, 240, 240) }, 0.2)
 		if tabButton:FindFirstChild("ActiveIndicator") then
-			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.15)
+			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.2)
 		end
 	else
-		tabContentVisible = false
+		-- Ensure non-active tab starts at the default look.
 	end
 
 	-----------------------------
 	-- Create the tab content:
 	-----------------------------
+	-- The content area is placed inside windowAPI.TabContentFrame, which in your integrated UI
+	-- is positioned below the TabButtonsFrame (and hence, below the title bar).
 	local tabContent = Instance.new("ScrollingFrame")
 	tabContent.Name = "TabContent_" .. tabName
 	tabContent.Size = UDim2.new(1, -10, 1, -10)
@@ -917,7 +1120,7 @@ end)
 	tabContent.Visible = initActive
 	tabContent.Parent = windowAPI.TabContentFrame
 
-	-- Add a vertical layout to organize content.
+	-- Use a vertical UIListLayout to neatly stack content.
 	local listLayout = Instance.new("UIListLayout", tabContent)
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Padding = UDim.new(0, 5)
@@ -939,7 +1142,7 @@ end)
 		sectionFrame.BackgroundTransparency = 1
 		sectionFrame.Parent = tabContent
 
-		-- Use a layout to neatly stack elements.
+		-- Use a UIListLayout for neatly stacking elements.
 		local sectionLayout = Instance.new("UIListLayout", sectionFrame)
 		sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		sectionLayout.Padding = UDim.new(0, 5)
@@ -965,6 +1168,7 @@ end)
 	return tab
 end
 
+
 --------------------------------------------------
 -- Add a new tab via your windowAPI.
 --------------------------------------------------
@@ -975,22 +1179,138 @@ end
 ---------------------------
 -- UI Visibility Toggle (RightShift)
 ---------------------------
+-- Upgraded UI Visibility Script with Minimized Check
+
+-- Services
+local TweenService    = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui      = game:GetService("StarterGui")
+-- local Lighting        = game:GetService("Lighting")  -- Uncomment if you want to use a blur effect
+
+--------------------------------------------------
+-- Helper Tween Function
+--------------------------------------------------
+local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+	local tweenInfo = TweenInfo.new(
+		duration or 0.35,
+		easingStyle or Enum.EasingStyle.Sine,
+		easingDirection or Enum.EasingDirection.Out,
+		0,
+		false,
+		delay or 0
+	)
+	local t = TweenService:Create(object, tweenInfo, properties)
+	if callback then
+		t.Completed:Connect(callback)
+	end
+	t:Play()
+	return t
+end
+
+--------------------------------------------------
+-- Fade Out and Hide Function
+--------------------------------------------------
+local function fadeOutAndHide(ui, duration)
+	duration = duration or 0.35
+	-- Iterate over all GUI descendants and tween their transparencies.
+	for _, descendant in ipairs(ui:GetDescendants()) do
+		if descendant:IsA("GuiObject") then
+			-- Store the original BackgroundTransparency if not already stored.
+			if descendant.BackgroundTransparency ~= nil and descendant:GetAttribute("origBackgroundTransparency") == nil then
+				descendant:SetAttribute("origBackgroundTransparency", descendant.BackgroundTransparency)
+			end
+			tween(descendant, { BackgroundTransparency = 1 }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			-- For text objects, store and tween the TextTransparency.
+			if (descendant:IsA("TextLabel") or descendant:IsA("TextButton")) and descendant.TextTransparency ~= nil then
+				if descendant:GetAttribute("origTextTransparency") == nil then
+					descendant:SetAttribute("origTextTransparency", descendant.TextTransparency)
+				end
+				tween(descendant, { TextTransparency = 1 }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			end
+		end
+	end
+	-- After tweening, disable the UI.
+	delay(duration, function()
+		ui.Visible = false
+	end)
+end
+
+--------------------------------------------------
+-- Fade In and Show Function
+--------------------------------------------------
+local function fadeInAndShow(ui, duration)
+	duration = duration or 0.35
+	ui.Visible = true
+	-- Iterate over all GUI descendants and tween transparencies back to their stored values.
+	for _, descendant in ipairs(ui:GetDescendants()) do
+		if descendant:IsA("GuiObject") then
+			local targetBg = descendant:GetAttribute("origBackgroundTransparency") or 0
+			tween(descendant, { BackgroundTransparency = targetBg }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			if descendant:IsA("TextLabel") or descendant:IsA("TextButton") then
+				local targetText = descendant:GetAttribute("origTextTransparency") or 0
+				tween(descendant, { TextTransparency = targetText }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			end
+		end
+	end
+end
+
+--------------------------------------------------
+-- Optional: Enhanced Blur Effect (Commented Out)
+--------------------------------------------------
+--[[
+local BlurEffect = Instance.new("BlurEffect")
+BlurEffect.Size = 0
+BlurEffect.Parent = game.Lighting
+
+local function setBlur(targetSize, duration)
+	duration = duration or 0.35
+	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	local blurTween = TweenService:Create(BlurEffect, tweenInfo, { Size = targetSize })
+	blurTween:Play()
+end
+--]]
+
+--------------------------------------------------
+-- UI Toggle Keybind Logic with Minimized Check
+--------------------------------------------------
 local uiVisible = true
+local debounce = false
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightShift then
-        uiVisible = not uiVisible
-        local mainFrameRef = game.CoreGui:FindFirstChild("CometUI") and game.CoreGui.CometUI:FindFirstChild("MainFrame")
-        if mainFrameRef then
-            if uiVisible then
-                mainFrameRef.Visible = true
-                tween(mainFrameRef, {BackgroundTransparency = 0}, 0.3, Enum.EasingStyle.Sine)
-            else
-                tween(mainFrameRef, {BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.In, 0, function()
-                    mainFrameRef.Visible = false
-                end)
-            end
-        end
-    end
+	if gameProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	
+	if input.KeyCode == Enum.KeyCode.K and input.UserInputState == Enum.UserInputState.Begin and not debounce then
+		debounce = true
+		
+		local cometUI = game.CoreGui:FindFirstChild("CometUI")
+		if cometUI then
+			local mainFrame = cometUI:FindFirstChild("MainFrame")
+			-- Check if the UI is minimized (attribute "Minimized" is true)
+			if mainFrame:GetAttribute("Minimized") then
+				-- Restore the minimized UI.
+				mainFrame:SetAttribute("Minimized", false)
+				uiVisible = true
+				fadeInAndShow(mainFrame, 0.35)
+				-- If you use additional elements (like drop shadows), fade them in here.
+			else
+				-- Toggle UI visibility as usual.
+				uiVisible = not uiVisible
+				if uiVisible then
+					fadeInAndShow(mainFrame, 0.35)
+				else
+					fadeOutAndHide(mainFrame, 0.35)
+					StarterGui:SetCore("SendNotification", {
+						Title = "UI Hidden",
+						Text = "Press K to restore the UI.",
+						Duration = 5,
+					})
+				end
+			end
+		end
+		
+		wait(0.35)
+		debounce = false
+	end
 end)
 
 ---------------------------
@@ -1024,7 +1344,7 @@ speedSection:AddSlider({
     Min = 16,
     Max = 100,
     Default = 16,
-    Size = UDim2.new(0, 300, 0, 140)
+    Size = UDim2.new(0, 300, 0, 100)
 }, function(value)
     print("Walk Speed changed to:", value)
     -- Update the player's WalkSpeed here.
@@ -1064,3 +1384,7 @@ testSection:AddButton({
     print("button clicked!")
     -- functionality here
 end)
+
+createNotification("Comet Executed", "Thanks for using comet!", 5)
+
+

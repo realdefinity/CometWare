@@ -755,36 +755,29 @@ end
 ---------------------------
 -- Base UI Window & Tab System with Sections
 ---------------------------
--- Upgraded MainFrame with Minimize & Close Buttons, Pulsing Border, and Smooth Dragging
-
--- Services
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
--- Remove any previous UI.
 if game.CoreGui:FindFirstChild("CometUI") then
     game.CoreGui:FindFirstChild("CometUI"):Destroy()
 end
 
--- Create ScreenGui.
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CometUI"
 screenGui.Parent = game.CoreGui
 screenGui.IgnoreGuiInset = true
 
---------------------------------------------------
--- Main Frame (No Drop Shadow; Pulsing Border instead)
---------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 500, 0, 400)
+mainFrame.Size = UDim2.new(0, 500, 0, 500)
 mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainFrame.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
 mainFrame.BackgroundTransparency = 0
+mainFrame.ClipsDescendants = true
 local mainGradient = Instance.new("UIGradient", mainFrame)
 mainGradient.Rotation = 90
 mainGradient.Color = ColorSequence.new{
@@ -798,7 +791,6 @@ mainStroke.Transparency = 0.2
 local mainCorner = Instance.new("UICorner", mainFrame)
 mainCorner.CornerRadius = UDim.new(0, 16)
 
--- Pulsing Border Effect (tween the stroke's Color continuously)
 spawn(function()
     while mainFrame and mainFrame.Parent do
         tween(mainStroke, {Color = Color3.fromRGB(0, 150, 255)}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
@@ -808,9 +800,6 @@ spawn(function()
     end
 end)
 
---------------------------------------------------
--- Title Bar with Minimize & Close Buttons
---------------------------------------------------
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Parent = mainFrame
@@ -825,8 +814,6 @@ titleGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
 }
-
--- Accent Line (underline)
 local accentLine = Instance.new("Frame")
 accentLine.Name = "AccentLine"
 accentLine.Parent = titleBar
@@ -834,11 +821,10 @@ accentLine.Size = UDim2.new(1, 0, 0, 3)
 accentLine.Position = UDim2.new(0, 0, 1, -3)
 accentLine.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 accentLine.BorderSizePixel = 0
-
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Parent = titleBar
-titleText.Size = UDim2.new(1, -120, 1, 0)  -- leave room for buttons
+titleText.Size = UDim2.new(1, -120, 1, 0)
 titleText.Position = UDim2.new(0, 20, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "CometWare"
@@ -848,7 +834,6 @@ titleText.TextSize = 28
 titleText.TextStrokeTransparency = 0.7
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Minimize Button
 local minimizeButton = Instance.new("TextButton")
 minimizeButton.Name = "MinimizeButton"
 minimizeButton.Parent = titleBar
@@ -870,7 +855,6 @@ minimizeButton.MouseButton1Click:Connect(function()
     })
 end)
 
--- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = titleBar
@@ -887,9 +871,6 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
---------------------------------------------------
--- Tab System Containers
---------------------------------------------------
 local tabButtonsFrame = Instance.new("Frame")
 tabButtonsFrame.Name = "TabButtonsFrame"
 tabButtonsFrame.Parent = mainFrame
@@ -903,21 +884,23 @@ tabContentFrame.Parent = mainFrame
 tabContentFrame.Size = UDim2.new(1, 0, 1, -70)
 tabContentFrame.Position = UDim2.new(0, 0, 0, 120)
 tabContentFrame.BackgroundTransparency = 1
+tabContentFrame.ClipsDescendants = true
+local contentPadding = Instance.new("UIPadding", tabContentFrame)
+contentPadding.PaddingTop = UDim.new(0, 10)
+contentPadding.PaddingBottom = UDim.new(0, 10)
+contentPadding.PaddingLeft = UDim.new(0, 10)
+contentPadding.PaddingRight = UDim.new(0, 10)
 
---------------------------------------------------
--- Smooth Dragging Integration (No Drop Shadow)
---------------------------------------------------
 local dragging = false
 local dragInput, dragStart, startPos
 local targetPos = mainFrame.Position
 
--- When the title bar receives a mouse down event:
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
-        targetPos = startPos  -- reset target when drag begins
+        targetPos = startPos
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -926,7 +909,6 @@ titleBar.InputBegan:Connect(function(input)
     end
 end)
 
--- Track the mouse movement on the title bar.
 titleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
@@ -946,9 +928,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---------------------------------------------------
--- Base Window API
---------------------------------------------------
 local windowAPI = {}
 windowAPI.TabButtonsFrame = tabButtonsFrame
 windowAPI.TabContentFrame = tabContentFrame
@@ -956,41 +935,22 @@ windowAPI.Tabs = {}
 windowAPI.ActiveTab = nil
 
 
+-- Tabs
 local TweenService = game:GetService("TweenService")
 
---------------------------------------------------
--- Tween helper (for smooth, crisp animations)
---------------------------------------------------
+local TweenService = game:GetService("TweenService")
 local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
-	local tweenInfo = TweenInfo.new(
-		duration or 0.25,
-		easingStyle or Enum.EasingStyle.Quad,
-		easingDirection or Enum.EasingDirection.Out,
-		0,
-		false,
-		delay or 0
-	)
+	local tweenInfo = TweenInfo.new(duration or 0.25, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out, 0, false, delay or 0)
 	local t = TweenService:Create(object, tweenInfo, properties)
-	if callback then
-		t.Completed:Connect(callback)
-	end
+	if callback then t.Completed:Connect(callback) end
 	t:Play()
 	return t
 end
 
---------------------------------------------------
--- Create a new tab for the window
---------------------------------------------------
 local function createTab(windowAPI, tabName)
 	local tab = {}
 	tab.Name = tabName
 	tab.Sections = {}
-
-	---------------------------------------------------
-	-- Ensure the TabButtonsFrame has a horizontal layout.
-	-- (Make sure that your TabButtonsFrame is positioned
-	-- under the title bar in your main UI.)
-	---------------------------------------------------
 	local tabButtonsFrame = windowAPI.TabButtonsFrame
 	if not tabButtonsFrame:FindFirstChildOfClass("UIListLayout") then
 		local listLayout = Instance.new("UIListLayout")
@@ -1000,117 +960,76 @@ local function createTab(windowAPI, tabName)
 		listLayout.Padding = UDim.new(0, 5)
 		listLayout.Parent = tabButtonsFrame
 	end
-
-	-----------------------------
-	-- Create the tab button:
-	-----------------------------
 	local tabButton = Instance.new("TextButton")
 	tabButton.Name = "TabButton"
 	tabButton.Text = tabName
-	tabButton.Size = UDim2.new(0, 120, 1, 0) -- fixed width; height is inherited from the TabButtonsFrame
-	tabButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)  -- default light gray
-	tabButton.TextColor3 = Color3.fromRGB(30, 30, 30)           -- dark text for contrast
+	tabButton.Size = UDim2.new(0, 120, 1, 0)
+	tabButton.BackgroundColor3 = Color3.fromRGB(235, 235, 235)
+	tabButton.TextColor3 = Color3.fromRGB(40, 40, 40)
 	tabButton.Font = Enum.Font.GothamBold
 	tabButton.TextSize = 16
 	tabButton.AutoButtonColor = false
 	tabButton.Parent = tabButtonsFrame
-	
-	-- Add a subtle UIGradient for depth.
 	local buttonGradient = Instance.new("UIGradient")
 	buttonGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 200, 200)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 190, 190))
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(235, 235, 235)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(225, 225, 225))
 	})
 	buttonGradient.Rotation = 90
 	buttonGradient.Parent = tabButton
-
-	-- Add smooth rounded corners.
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = tabButton
-
-	-- Add an active indicator (a thin line at the bottom).
 	local indicator = Instance.new("Frame")
 	indicator.Name = "ActiveIndicator"
 	indicator.Size = UDim2.new(1, 0, 0, 3)
 	indicator.Position = UDim2.new(0, 0, 1, -3)
-	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)  -- blue accent
-	indicator.BackgroundTransparency = 1  -- hidden by default
+	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+	indicator.BackgroundTransparency = 1
 	indicator.Parent = tabButton
-
-	-- Add a subtle UIScale for hover animations.
 	local scaleObj = Instance.new("UIScale")
 	scaleObj.Scale = 1
 	scaleObj.Parent = tabButton
-
-	-----------------------------
-	-- Smoother Hover & Active Effects:
-	-----------------------------
-	-- (Using 0.2 seconds for smoother transitions.)
 	tabButton.MouseEnter:Connect(function()
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, { Scale = 1.05 }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(220, 220, 220) }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(scaleObj, {Scale = 1.05}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(245, 245, 245)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		end
 	end)
-
 	tabButton.MouseLeave:Connect(function()
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, { Scale = 1 }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, { BackgroundColor3 = Color3.fromRGB(200, 200, 200) }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(scaleObj, {Scale = 1}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(235, 235, 235)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		end
 	end)
-
-	-- When a tab is clicked, animate its active state, hide other tabs’ content,
-	-- and mark this one as active.
 	tabButton.MouseButton1Click:Connect(function()
-		-- Reset all tabs.
 		for _, t in pairs(windowAPI.Tabs) do
 			if t.Button then
-				tween(t.Button, { BackgroundColor3 = Color3.fromRGB(200, 200, 200) }, 0.2)
+				tween(t.Button, {BackgroundColor3 = Color3.fromRGB(235, 235, 235)}, 0.2)
 				local ind = t.Button:FindFirstChild("ActiveIndicator")
-				if ind then
-					tween(ind, { BackgroundTransparency = 1 }, 0.2)
-				end
-				-- Reset scale.
+				if ind then tween(ind, {BackgroundTransparency = 1}, 0.2) end
 				local s = t.Button:FindFirstChildOfClass("UIScale")
-				if s then
-					tween(s, { Scale = 1 }, 0.2)
-				end
+				if s then tween(s, {Scale = 1}, 0.2) end
 			end
 			if t.Content then
 				t.Content.Visible = false
 			end
 		end
-
-		-- Activate this tab.
-		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(240, 240, 240) }, 0.2)
+		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
 		if tabButton:FindFirstChild("ActiveIndicator") then
-			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.2)
+			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.2)
 		end
-
-		-- Show this tab's content.
 		tab.Content.Visible = true
 		windowAPI.ActiveTab = tab
 	end)
-
-	-- If no active tab exists yet, initialize with this one.
 	local initActive = not windowAPI.ActiveTab
 	if initActive then
 		windowAPI.ActiveTab = tab
-		tween(tabButton, { BackgroundColor3 = Color3.fromRGB(240, 240, 240) }, 0.2)
+		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
 		if tabButton:FindFirstChild("ActiveIndicator") then
-			tween(tabButton.ActiveIndicator, { BackgroundTransparency = 0 }, 0.2)
+			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.2)
 		end
-	else
-		-- Ensure non-active tab starts at the default look.
 	end
-
-	-----------------------------
-	-- Create the tab content:
-	-----------------------------
-	-- The content area is placed inside windowAPI.TabContentFrame, which in your integrated UI
-	-- is positioned below the TabButtonsFrame (and hence, below the title bar).
 	local tabContent = Instance.new("ScrollingFrame")
 	tabContent.Name = "TabContent_" .. tabName
 	tabContent.Size = UDim2.new(1, -10, 1, -10)
@@ -1119,37 +1038,23 @@ local function createTab(windowAPI, tabName)
 	tabContent.ScrollBarThickness = 4
 	tabContent.Visible = initActive
 	tabContent.Parent = windowAPI.TabContentFrame
-
-	-- Use a vertical UIListLayout to neatly stack content.
 	local listLayout = Instance.new("UIListLayout", tabContent)
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Padding = UDim.new(0, 5)
-
-	-- Save references for later use.
 	tab.Button = tabButton
 	tab.Content = tabContent
-
-	-----------------------------
-	-- Allow adding sections:
-	-----------------------------
 	function tab:AddSection(sectionName)
 		local section = {}
 		section.Name = sectionName
-
 		local sectionFrame = Instance.new("Frame")
 		sectionFrame.Name = "Section_" .. sectionName
-		sectionFrame.Size = UDim2.new(1, 0, 0, 100)  -- default height; adjust as needed
+		sectionFrame.Size = UDim2.new(1, 0, 0, 100)
 		sectionFrame.BackgroundTransparency = 1
 		sectionFrame.Parent = tabContent
-
-		-- Use a UIListLayout for neatly stacking elements.
 		local sectionLayout = Instance.new("UIListLayout", sectionFrame)
 		sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		sectionLayout.Padding = UDim.new(0, 5)
-
 		section.Frame = sectionFrame
-
-		-- These functions assume you have createSlider, createToggle, and createButton defined.
 		function section:AddSlider(opts, callback)
 			createSlider(sectionFrame, opts, callback)
 		end
@@ -1159,15 +1064,12 @@ local function createTab(windowAPI, tabName)
 		function section:AddButton(opts, callback)
 			createButton(sectionFrame, opts, callback)
 		end
-
 		table.insert(tab.Sections, section)
 		return section
 	end
-
 	table.insert(windowAPI.Tabs, tab)
 	return tab
 end
-
 
 --------------------------------------------------
 -- Add a new tab via your windowAPI.
@@ -1332,3 +1234,294 @@ end
 
 _G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,500,0,400) })
 print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")
+
+
+local VisualsTab = _G.baseWindow:AddTab("Visuals")
+local MovementTab = _G.baseWindow:AddTab("Movement")
+local fpsSection = VisualsTab:AddSection("FPS")
+local MovementSection = MovementTab:AddSection("Movement")
+
+-- FPS Booster and Revert Functions
+
+FPSBooster = {}
+
+function FPSBooster:Boost()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.Reflectance = 0
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false
+        elseif obj:IsA("Beam") then
+            obj.Enabled = false
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = false
+        end
+    end
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 1
+    Lighting.EnvironmentSpecularScale = 0
+    Lighting.EnvironmentDiffuseScale = 0
+    if workspace:FindFirstChildOfClass("Terrain") then
+        workspace.Terrain.Decoration = false
+    end
+end
+
+function FPSBooster:Revert()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.Plastic
+            obj.Reflectance = 0.5  -- Adjust as needed
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = true
+        elseif obj:IsA("Beam") then
+            obj.Enabled = true
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = true
+        end
+    end
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = true
+    Lighting.FogEnd = 100000  -- Adjust to your game's default
+    Lighting.Brightness = 2   -- Adjust as needed
+    Lighting.EnvironmentSpecularScale = 1
+    Lighting.EnvironmentDiffuseScale = 1
+    if workspace:FindFirstChildOfClass("Terrain") then
+        workspace.Terrain.Decoration = true
+    end
+end
+
+
+-- FPS Booster Toggle in the FPS Section
+fpsSection:AddToggle({ 
+    Label = "FPS booster", 
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    print("toggle:", state)
+    if state then
+         FPSBooster:Boost()
+    else
+         FPSBooster:Revert()
+    end
+end)
+
+-- Variables
+local toggles = {
+    customSpeedEnabled = false
+}
+local customSpeed = 16 -- Default speed
+
+-- Helper: Notify Function
+local function notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 5,
+        Actions = {
+            Dismiss = {
+                Name = "OK",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+toggles = toggles or {}
+toggles.customSpeedEnabled = false
+customSpeed = 16
+local speedConnection
+
+local function applyCustomSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+    end
+    speedConnection = RunService.Stepped:Connect(function(_, deltaTime)
+        if toggles.customSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                local moveDirection = humanoid.MoveDirection * (customSpeed * deltaTime)
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(moveDirection.X, 0, moveDirection.Z)
+            end
+        end
+    end)
+end
+
+MovementSection:AddToggle({ 
+    Label = "Speed", 
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    toggles.customSpeedEnabled = state
+    if state then
+        applyCustomSpeed()
+    else
+        if speedConnection then
+            speedConnection:Disconnect()
+        end
+    end
+end)
+
+MovementSection:AddSlider({ 
+    Label = "Set Speed",
+    Min = 16,
+    Max = 50,
+    Default = 16,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(value)
+    customSpeed = value
+end)
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+toggles = toggles or {}
+toggles.customJumpEnabled = false
+jumpPower = 50
+
+local function applyCustomJump()
+    UserInputService.JumpRequest:Connect(function()
+        if toggles.customJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.FloorMaterial == Enum.Material.Air then return end
+            for i = 1, jumpPower, 5 do
+                task.wait(0.01)
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0.5, 0)
+            end
+            task.wait(0.1)
+            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, -0.5, 0)
+        end
+    end)
+end
+
+MovementSection:AddToggle({
+    Label = "Jump Power",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(Value)
+    toggles.customJumpEnabled = Value
+    if Value then
+        applyCustomJump()
+    end
+end)
+
+MovementSection:AddSlider({
+    Label = "Set Jump Power",
+    Range = {10, 100},
+    Increment = 5,
+    Default = 50,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(Value)
+    jumpPower = Value
+end)
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- State variables
+local flying = false
+local flySpeed = 5  -- Default fly speed
+local flyDirection = Vector3.new(0, 0, 0)
+local hrp = nil  -- HumanoidRootPart
+local flyConnection = nil
+
+-- Key states for smooth flight movement
+local keys = {
+    W = false,
+    S = false,
+    A = false,
+    D = false,
+    Space = false,
+    Shift = false
+}
+
+-- Start Fly function (with smooth, interpolated flight)
+local function startFly()
+    if flying or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    flying = true
+    hrp = LocalPlayer.Character.HumanoidRootPart
+    hrp.Anchored = true
+    flyConnection = RunService.RenderStepped:Connect(function(dt)
+        if flying and hrp then
+            flyDirection = Vector3.new(
+                ((keys.D and 1) or 0) + ((keys.A and -1) or 0),
+                ((keys.Space and 1) or 0) + ((keys.Shift and -1) or 0),
+                ((keys.S and 1) or 0) + ((keys.W and -1) or 0)
+            )
+            hrp.CFrame = hrp.CFrame * CFrame.new(flyDirection * flySpeed * 0.1)
+        end
+    end)
+end
+
+-- Stop Fly function
+local function stopFly()
+    flying = false
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+    if hrp then
+        hrp.Anchored = false
+    end
+end
+
+-- Update key states for flight
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then keys.W = true end
+    if input.KeyCode == Enum.KeyCode.S then keys.S = true end
+    if input.KeyCode == Enum.KeyCode.A then keys.A = true end
+    if input.KeyCode == Enum.KeyCode.D then keys.D = true end
+    if input.KeyCode == Enum.KeyCode.Space then keys.Space = true end
+    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = true end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then keys.W = false end
+    if input.KeyCode == Enum.KeyCode.S then keys.S = false end
+    if input.KeyCode == Enum.KeyCode.A then keys.A = false end
+    if input.KeyCode == Enum.KeyCode.D then keys.D = false end
+    if input.KeyCode == Enum.KeyCode.Space then keys.Space = false end
+    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = false end
+end)
+
+-- UI Integration using your custom UI functions.
+-- (Ensure MovementSection is a valid reference to your movement UI section.)
+MovementSection:AddToggle({
+    Label = "Enable Fly",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(Value)
+    if Value then
+        startFly()
+    else
+        stopFly()
+    end
+end)
+
+MovementSection:AddSlider({
+    Label = "Fly Speed",
+    Range = {1, 20},
+    Increment = 1,
+    Default = flySpeed,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(Value)
+    flySpeed = Value
+end)
+
+

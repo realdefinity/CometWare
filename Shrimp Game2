@@ -1,0 +1,72 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/ui'))()
+
+
+local VisualsTab = _G.baseWindow:AddTab("Visuals")
+local fpsSection = VisualsTab:AddSection("FPS")
+
+-- FPS Booster and Revert Functions
+
+FPSBooster = {}
+
+function FPSBooster:Boost()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.Reflectance = 0
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false
+        elseif obj:IsA("Beam") then
+            obj.Enabled = false
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = false
+        end
+    end
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 1
+    Lighting.EnvironmentSpecularScale = 0
+    Lighting.EnvironmentDiffuseScale = 0
+    if workspace:FindFirstChildOfClass("Terrain") then
+        workspace.Terrain.Decoration = false
+    end
+end
+
+function FPSBooster:Revert()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.Plastic
+            obj.Reflectance = 0.5  -- Adjust as needed
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = true
+        elseif obj:IsA("Beam") then
+            obj.Enabled = true
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj.Enabled = true
+        end
+    end
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = true
+    Lighting.FogEnd = 100000  -- Adjust to your game's default
+    Lighting.Brightness = 2   -- Adjust as needed
+    Lighting.EnvironmentSpecularScale = 1
+    Lighting.EnvironmentDiffuseScale = 1
+    if workspace:FindFirstChildOfClass("Terrain") then
+        workspace.Terrain.Decoration = true
+    end
+end
+
+
+-- FPS Booster Toggle in the FPS Section
+fpsSection:AddToggle({ 
+    Label = "FPS booster", 
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    print("toggle:", state)
+    if state then
+         FPSBooster:Boost()
+    else
+         FPSBooster:Revert()
+    end
+end)

@@ -2,11 +2,13 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
+-- Create the loading ScreenGui
 local loadingGui = Instance.new("ScreenGui")
 loadingGui.Name = "CometLoadingGui"
 loadingGui.Parent = game.CoreGui
 loadingGui.IgnoreGuiInset = true
 
+-- Background with smooth gradient animation
 local bg = Instance.new("Frame")
 bg.Name = "Background"
 bg.Parent = loadingGui
@@ -15,8 +17,12 @@ bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 bg.BackgroundTransparency = 0.3
 local bgGradient = Instance.new("UIGradient", bg)
 bgGradient.Rotation = 90
-bgGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(40,40,40)), ColorSequenceKeypoint.new(1, Color3.fromRGB(60,60,60))})
+bgGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
+})
 
+-- Loading frame centered on the screen
 local loadingFrame = Instance.new("Frame")
 loadingFrame.Name = "LoadingFrame"
 loadingFrame.Parent = loadingGui
@@ -25,6 +31,7 @@ loadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 loadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 loadingFrame.BackgroundTransparency = 1
 
+-- Comet label with animated gradient and pulsing text size
 local cometLabel = Instance.new("TextLabel")
 cometLabel.Name = "CometLabel"
 cometLabel.Parent = loadingFrame
@@ -36,11 +43,31 @@ cometLabel.TextSize = 72
 cometLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 cometLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 cometLabel.TextStrokeTransparency = 0.5
-cometLabel.TextTransparency = 0
 cometLabel.ZIndex = 2
 
-spawn(function()
-	while cometLabel and cometLabel.Parent do
+local textGradient = Instance.new("UIGradient", cometLabel)
+textGradient.Rotation = 0
+textGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,150,255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(220,220,220))
+})
+textGradient.Offset = Vector2.new(0, 0)
+
+-- Animate the text gradient offset in a looping cycle
+coroutine.wrap(function()
+	while true do
+		local tween1 = TweenService:Create(textGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Offset = Vector2.new(1, 0)})
+		tween1:Play()
+		tween1.Completed:Wait()
+		local tween2 = TweenService:Create(textGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Offset = Vector2.new(0, 0)})
+		tween2:Play()
+		tween2.Completed:Wait()
+	end
+end)()
+
+-- Pulse the text size for a subtle breathing effect
+coroutine.wrap(function()
+	while true do
 		local pulseUp = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize = 80})
 		pulseUp:Play()
 		pulseUp.Completed:Wait()
@@ -48,63 +75,76 @@ spawn(function()
 		pulseDown:Play()
 		pulseDown.Completed:Wait()
 	end
-end)
+end)()
 
+-- Function to spawn a custom-made comet (a Frame with gradient transparency)
 local function spawnComet()
-	local comet = Instance.new("ImageLabel")
+	local comet = Instance.new("Frame")
 	comet.Name = "FlyingComet"
-	comet.Size = UDim2.new(0, 40, 0, 20)
-	comet.BackgroundTransparency = 1
-	comet.Image = "rbxassetid://YOUR_ASSET_ID"
-	comet.ImageColor3 = Color3.fromRGB(200, 200, 200)
-	comet.ImageTransparency = 0
+	comet.Size = UDim2.new(0, 40, 0, 10)
+	comet.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	comet.BackgroundTransparency = 0
+	comet.BorderSizePixel = 0
 	comet.Parent = loadingFrame
 	comet.ZIndex = 1
+	local cometCorner = Instance.new("UICorner", comet)
+	cometCorner.CornerRadius = UDim.new(0, 5)
+	
+	local cometGradient = Instance.new("UIGradient", comet)
+	cometGradient.Rotation = 0
+	cometGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+	})
+	cometGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1)
+	})
+	
 	local startX = -50
 	local endX = 450
-	local yPos = 75 + math.random(-10,10)
+	local yPos = 75 + math.random(-15,15)
 	comet.Position = UDim2.new(0, startX, 0, yPos)
-	local cometTween = TweenService:Create(comet, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, endX, 0, yPos), ImageTransparency = 1})
-	cometTween:Play()
 	
-	local trail = Instance.new("ImageLabel")
-	trail.Name = "CometTrail"
-	trail.Size = UDim2.new(0, 50, 0, 25)
-	trail.BackgroundTransparency = 1
-	trail.Image = comet.Image
-	trail.ImageColor3 = Color3.fromRGB(200,200,200)
-	trail.ImageTransparency = 0.2
-	trail.Parent = loadingFrame
-	trail.ZIndex = comet.ZIndex - 1
-	trail.Position = UDim2.new(0, startX - 10, 0, yPos)
-	TweenService:Create(trail, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, endX - 10, 0, yPos), ImageTransparency = 1}):Play()
-	delay(0.8, function() trail:Destroy() end)
-	delay(0.8, function() comet:Destroy() end)
+	local cometTween = TweenService:Create(comet, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0, endX, 0, yPos),
+		BackgroundTransparency = 1
+	})
+	cometTween:Play()
+	cometTween.Completed:Connect(function() comet:Destroy() end)
 end
 
+-- Continuously spawn comets at random intervals
 spawn(function()
-	for i = 1, 3 do
+	while true do
 		spawnComet()
-		wait(1)
+		wait(math.random(0.5, 1))
 	end
 end)
 
-spawn(function()
+-- Animate the background gradient offset for a dynamic feel
+coroutine.wrap(function()
 	while bgGradient do
-		TweenService:Create(bgGradient, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(math.random(-50,50), math.random(-50,50))}):Play()
+		local tween = TweenService:Create(bgGradient, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(math.random(-50,50), math.random(-50,50))})
+		tween:Play()
+		tween.Completed:Wait()
 		wait(2)
 	end
-end)
+end)()
 
+-- After a delay, fade out the loading screen and destroy it
 wait(3)
-
 local fadeTween = TweenService:Create(loadingFrame, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
 fadeTween:Play()
 local fadeBgTween = TweenService:Create(bg, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
 fadeBgTween:Play()
 fadeBgTween.Completed:Wait()
 
-StarterGui:SetCore("SendNotification", {Title = "Comet Loaded.", Text = "Thanks for using comet!", Duration = 5})
+StarterGui:SetCore("SendNotification", {
+	Title = "Comet Loaded.",
+	Text = "Thanks for using Comet!",
+	Duration = 5
+})
 loadingGui:Destroy()
 
 ---------------------------
@@ -170,58 +210,59 @@ local function createSlider(parent, opts, callback)
 	local defaultValue = opts.Default or 50
 	local sliderLabel = opts.Label or "Slider"
 	local initPercent = (defaultValue - min) / (max - min)
-	
-	-- If the slider is meant to be closely grouped, reduce height slightly.
 	local sliderHeight = opts.Organization and 80 or 100
-	
-	-- Outer Container (Slider)
+
+	local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
+		local ti = TweenInfo.new(duration, easingStyle or Enum.EasingStyle.Sine, easingDirection or Enum.EasingDirection.Out, 0, false, delay or 0)
+		local t = game:GetService("TweenService"):Create(object, ti, properties)
+		t:Play()
+		if callback then
+			t.Completed:Connect(callback)
+		end
+		return t
+	end
+
+	-- Outer Container
 	local slider = Instance.new("Frame")
 	slider.Name = "Slider"
 	slider.Size = opts.Size or UDim2.new(0, 320, 0, sliderHeight)
-	slider.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  -- dark background for contrast
+	slider.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	slider.BackgroundTransparency = 0
 	slider.ClipsDescendants = true
 	slider.ZIndex = 10
 	slider.Parent = parent
 
-	-- Drop Shadow Effect (for container depth)
-	local shadow = Instance.new("Frame")
-	shadow.Name = "Shadow"
-	shadow.Size = slider.Size
-	shadow.Position = UDim2.new(0, 4, 0, 4)
-	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-	shadow.BackgroundTransparency = 0.5
-	shadow.BorderSizePixel = 0
-	shadow.ZIndex = slider.ZIndex - 1
-	shadow.Parent = slider
+	-- (Drop shadow removed for a cleaner, flat design)
 
-	-- UIStroke (Container Border)
-	local containerStroke = Instance.new("UIStroke")
-	containerStroke.Parent = slider
+	-- Container Border & Rounded Corners
+	local containerStroke = Instance.new("UIStroke", slider)
 	containerStroke.Thickness = 2
 	containerStroke.Color = Color3.fromRGB(100, 100, 100)
 	containerStroke.Transparency = 0.2
-
-	-- Rounded Corners for container
 	local containerCorner = Instance.new("UICorner", slider)
 	containerCorner.CornerRadius = UDim.new(0, 10)
 
-	-- UIScale for subtle hover effect
+	-- Hover effect on the slider container
 	local scaleObj = Instance.new("UIScale", slider)
 	scaleObj.Scale = 1
+	slider.MouseEnter:Connect(function()
+		tween(scaleObj, {Scale = 1.02}, 0.2)
+		tween(containerStroke, {Color = Color3.fromRGB(0, 150, 255)}, 0.2)
+	end)
+	slider.MouseLeave:Connect(function()
+		tween(scaleObj, {Scale = 1}, 0.2)
+		tween(containerStroke, {Color = Color3.fromRGB(100, 100, 100)}, 0.2)
+	end)
 
-	-----------------------------------
-	-- Content Container
-	-----------------------------------
+	-- Content Container & Layout
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.Size = UDim2.new(1, 0, 1, 0)
-	content.Position = UDim2.new(0, 0, 0, 0)
+	content.Position = UDim2.new(0, 1, 0, 0)
 	content.BackgroundTransparency = 1
-	content.ZIndex = slider.ZIndex + 1
+	content.ZIndex = slider.ZIndex + 4
 	content.Parent = slider
 
-	-- Padding for content; slightly tighter if Organization is set.
 	local padding = Instance.new("UIPadding", content)
 	if opts.Organization then
 		padding.PaddingLeft = UDim.new(0, 6)
@@ -240,7 +281,6 @@ local function createSlider(parent, opts, callback)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Padding = UDim.new(0, 4)
 
-	-- Optional Organization Header (for grouping)
 	if opts.Organization and opts.OrgLabel then
 		local orgLabel = Instance.new("TextLabel")
 		orgLabel.Name = "OrganizationLabel"
@@ -255,7 +295,6 @@ local function createSlider(parent, opts, callback)
 		orgLabel.Parent = content
 	end
 
-	-- Title Label
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "TitleLabel"
 	titleLabel.Size = UDim2.new(1, 0, 0, 35)
@@ -269,7 +308,6 @@ local function createSlider(parent, opts, callback)
 	titleLabel.ZIndex = content.ZIndex
 	titleLabel.Parent = content
 
-	-- Value Label
 	local valueLabel = Instance.new("TextLabel")
 	valueLabel.Name = "ValueLabel"
 	valueLabel.Size = UDim2.new(1, 0, 0, 25)
@@ -296,10 +334,10 @@ local function createSlider(parent, opts, callback)
 	trackCorner.CornerRadius = UDim.new(0, 6)
 
 	local trackGradient = Instance.new("UIGradient", track)
-	trackGradient.Color = ColorSequence.new{
+	trackGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 80, 80)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-	}
+	})
 	trackGradient.Rotation = 90
 
 	-- Fill inside the Track
@@ -315,10 +353,10 @@ local function createSlider(parent, opts, callback)
 	fillCorner.CornerRadius = UDim.new(0, 6)
 
 	local fillGradient = Instance.new("UIGradient", fill)
-	fillGradient.Color = ColorSequence.new{
+	fillGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 180, 255)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 120, 255))
-	}
+	})
 	fillGradient.Rotation = 90
 
 	-- Draggable Handle
@@ -342,24 +380,37 @@ local function createSlider(parent, opts, callback)
 	handleStroke.Thickness = 2
 	handleStroke.Transparency = 0.5
 
-	-----------------------------------
+	-- Tooltip (appears above the handle when dragging)
+	local tooltip = Instance.new("TextLabel")
+	tooltip.Name = "Tooltip"
+	tooltip.Size = UDim2.new(0, 50, 0, 20)
+	tooltip.Position = UDim2.new(0, 0, 0, -25)
+	tooltip.BackgroundTransparency = 1
+	tooltip.TextColor3 = Color3.fromRGB(255, 255, 255)
+	tooltip.Font = Enum.Font.GothamBold
+	tooltip.TextSize = 18
+	tooltip.Text = tostring(defaultValue)
+	tooltip.Visible = false
+	tooltip.ZIndex = handle.ZIndex + 1
+	tooltip.Parent = track
+
 	-- Smooth interpolation for fill & handle
-	-----------------------------------
 	local targetPercent = initPercent
 	local currentPercent = initPercent
-	local renderConn = RunService.RenderStepped:Connect(function()
+	local renderConn = game:GetService("RunService").RenderStepped:Connect(function()
 		if slider and slider.Parent then
 			currentPercent = currentPercent + (targetPercent - currentPercent) * 0.6
 			fill.Size = UDim2.new(currentPercent, 0, 1, 0)
 			handle.Position = UDim2.new(currentPercent, 0, 0.5, 0)
+			if tooltip.Visible then
+				tooltip.Position = UDim2.new(currentPercent, 0, 0, -25)
+			end
 		else
 			renderConn:Disconnect()
 		end
 	end)
 
-	-----------------------------------
 	-- Dragging logic and updating value
-	-----------------------------------
 	local dragging = false
 	local function updateValueFromInput(input)
 		local absX = track.AbsolutePosition.X
@@ -368,29 +419,27 @@ local function createSlider(parent, opts, callback)
 		local pos = math.clamp(mouseX - absX, 0, width)
 		local percent = pos / width
 		
-		-- If snapping is enabled, round the value to the nearest increment.
 		if opts.Snap and opts.Increment then
 			local rawValue = min + (max - min) * percent
 			local snappedValue = math.floor(rawValue / opts.Increment + 0.5) * opts.Increment
 			percent = (snappedValue - min) / (max - min)
 			valueLabel.Text = tostring(snappedValue)
+			tooltip.Text = tostring(snappedValue)
 			targetPercent = percent
-			if callback then
-				callback(snappedValue)
-			end
+			if callback then callback(snappedValue) end
 		else
 			targetPercent = percent
 			local value = math.floor(min + (max - min) * percent)
 			valueLabel.Text = tostring(value)
-			if callback then
-				callback(value)
-			end
+			tooltip.Text = tostring(value)
+			if callback then callback(value) end
 		end
 	end
 
 	handle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
+			tooltip.Visible = true
 			tween(handle, {Size = UDim2.new(0, 26, 0, 26)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 		end
 	end)
@@ -398,6 +447,7 @@ local function createSlider(parent, opts, callback)
 	handle.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = false
+			tooltip.Visible = false
 			tween(handle, {Size = UDim2.new(0, 20, 0, 20)}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 		end
 	end)
@@ -413,7 +463,7 @@ local function createSlider(parent, opts, callback)
 		end
 	end)
 
-	UserInputService.InputChanged:Connect(function(input)
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 			updateValueFromInput(input)
 		end
@@ -761,7 +811,7 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 if game.CoreGui:FindFirstChild("CometUI") then
-    game.CoreGui:FindFirstChild("CometUI"):Destroy()
+	game.CoreGui:FindFirstChild("CometUI"):Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -775,52 +825,75 @@ mainFrame.Parent = screenGui
 mainFrame.Size = UDim2.new(0, 500, 0, 500)
 mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 mainFrame.BackgroundTransparency = 0
 mainFrame.ClipsDescendants = true
-local mainGradient = Instance.new("UIGradient", mainFrame)
-mainGradient.Rotation = 90
-mainGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(38, 38, 38))
-}
-local mainStroke = Instance.new("UIStroke", mainFrame)
-mainStroke.Thickness = 3
-mainStroke.Color = Color3.fromRGB(80, 80, 80)
-mainStroke.Transparency = 0.2
+
 local mainCorner = Instance.new("UICorner", mainFrame)
 mainCorner.CornerRadius = UDim.new(0, 16)
 
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Thickness = 3
+mainStroke.Color = Color3.fromRGB(0, 150, 255)
+mainStroke.Transparency = 0.1
+
 spawn(function()
-    while mainFrame and mainFrame.Parent do
-        tween(mainStroke, {Color = Color3.fromRGB(0, 150, 255)}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        wait(1.5)
-        tween(mainStroke, {Color = Color3.fromRGB(80, 80, 80)}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        wait(1.5)
-    end
+	while mainFrame and mainFrame.Parent do
+		TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 150, 255)}):Play()
+		wait(2)
+		TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 100, 180)}):Play()
+		wait(2)
+	end
 end)
+
+local mainGradient = Instance.new("UIGradient", mainFrame)
+mainGradient.Rotation = 90
+mainGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 10)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+}
+
+local TweenService = game:GetService("TweenService")
 
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Parent = mainFrame
 titleBar.Size = UDim2.new(1, 0, 0, 50)
-titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 titleBar.BorderSizePixel = 0
+titleBar.Active = true
+titleBar.Selectable = true
+
 local titleBarCorner = Instance.new("UICorner", titleBar)
 titleBarCorner.CornerRadius = UDim.new(0, 16)
+
 local titleGradient = Instance.new("UIGradient", titleBar)
 titleGradient.Rotation = 90
 titleGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
 }
+
 local accentLine = Instance.new("Frame")
 accentLine.Name = "AccentLine"
 accentLine.Parent = titleBar
-accentLine.Size = UDim2.new(1, 0, 0, 3)
-accentLine.Position = UDim2.new(0, 0, 1, -3)
+accentLine.Size = UDim2.new(1, 0, 0, 4)
+accentLine.Position = UDim2.new(0, 0, 1, -4)
 accentLine.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+accentLine.BackgroundTransparency = 0
 accentLine.BorderSizePixel = 0
+
+local accentColorTween = TweenService:Create(accentLine, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundColor3 = Color3.fromRGB(0, 200, 255)})
+accentColorTween:Play()
+
+local accentTransparencyTween = TweenService:Create(accentLine, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.15})
+accentTransparencyTween:Play()
+
+
+local TweenService = game:GetService("TweenService")
+
+local TweenService = game:GetService("TweenService")
+
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Parent = titleBar
@@ -828,38 +901,122 @@ titleText.Size = UDim2.new(1, -120, 1, 0)
 titleText.Position = UDim2.new(0, 20, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "CometWare"
-titleText.TextColor3 = Color3.fromRGB(240, 240, 240)
-titleText.Font = Enum.Font.GothamSemibold
+-- Changed font to GothamBold for a bolder look.
+titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 28
 titleText.TextStrokeTransparency = 0.7
 titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.TextColor3 = Color3.fromRGB(240, 240, 240)
+
+-- Create a gradient that animates within the text (i.e. the shine effect happens inside the letters)
+local textGradient = Instance.new("UIGradient", titleText)
+textGradient.Rotation = 0
+textGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 240, 240))
+}
+-- Start with a slight offset so the "shine" starts off inside the text
+textGradient.Offset = Vector2.new(-0.2, 0)
+
+-- Animate the gradient's offset so the shine flows through the text
+coroutine.wrap(function()
+	while true do
+		local tween1 = TweenService:Create(textGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(1, 0)})
+		tween1:Play()
+		tween1.Completed:Wait()
+		local tween2 = TweenService:Create(textGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(-0.2, 0)})
+		tween2:Play()
+		tween2.Completed:Wait()
+	end
+end)()
+
+
+
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
 
 local minimizeButton = Instance.new("TextButton")
 minimizeButton.Name = "MinimizeButton"
 minimizeButton.Parent = titleBar
 minimizeButton.Size = UDim2.new(0, 30, 0, 30)
-minimizeButton.Position = UDim2.new(1, -70, 0, 10)
-minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimizeButton.Position = UDim2.new(1, -85, 0, 10)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 minimizeButton.Text = "–"
 minimizeButton.Font = Enum.Font.GothamSemibold
 minimizeButton.TextSize = 20
-minimizeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
 local minCorner = Instance.new("UICorner", minimizeButton)
-minCorner.CornerRadius = UDim.new(0, 5)
-minimizeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    StarterGui:SetCore("SendNotification", {
-        Title = "UI Minimized",
-        Text = "Press K to restore the UI.",
-        Duration = 5,
-    })
+minCorner.CornerRadius = UDim.new(0, 8)
+
+local minGradient = Instance.new("UIGradient", minimizeButton)
+minGradient.Rotation = 90
+minGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 150, 150)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 130, 130))
+}
+
+local minScale = Instance.new("UIScale", minimizeButton)
+minScale.Scale = 1
+
+minimizeButton.MouseEnter:Connect(function()
+	TweenService:Create(minScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
+	TweenService:Create(minimizeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	TweenService:Create(minGradient, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 240, 240)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 220, 220))
+	}}):Play()
 end)
+
+minimizeButton.MouseLeave:Connect(function()
+	TweenService:Create(minScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	TweenService:Create(minimizeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+	TweenService:Create(minGradient, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 150, 150)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 130, 130))
+	}}):Play()
+end)
+
+minimizeButton.MouseButton1Down:Connect(function()
+	TweenService:Create(minScale, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.9}):Play()
+	local ripple = Instance.new("Frame")
+	ripple.Name = "Ripple"
+	ripple.Parent = minimizeButton
+	ripple.Size = UDim2.new(0, 0, 0, 0)
+	ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+	ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+	ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ripple.BackgroundTransparency = 0.3
+	local rippleCorner = Instance.new("UICorner", ripple)
+	rippleCorner.CornerRadius = UDim.new(1, 0)
+	TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}):Play()
+	task.delay(0.3, function() ripple:Destroy() end)
+end)
+
+minimizeButton.MouseButton1Up:Connect(function()
+	TweenService:Create(minScale, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+	StarterGui:SetCore("SendNotification", {
+		Title = "UI Minimized",
+		Text = "Press K to restore the UI.",
+		Duration = 5,
+	})
+end)
+
+
+
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
 
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = titleBar
+-- Changed position: shifted 20 pixels further left from the edge.
+closeButton.Position = UDim2.new(1, -50, 0, 10)
 closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -30, 0, 10)
 closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 closeButton.Text = "X"
 closeButton.Font = Enum.Font.GothamSemibold
@@ -867,9 +1024,42 @@ closeButton.TextSize = 20
 closeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
 local closeCorner = Instance.new("UICorner", closeButton)
 closeCorner.CornerRadius = UDim.new(0, 5)
-closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
+
+local closeScale = Instance.new("UIScale", closeButton)
+closeScale.Scale = 1
+
+closeButton.MouseEnter:Connect(function()
+	TweenService:Create(closeScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
+	TweenService:Create(closeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(240, 80, 80)}):Play()
 end)
+
+closeButton.MouseLeave:Connect(function()
+	TweenService:Create(closeScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	TweenService:Create(closeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(220, 60, 60)}):Play()
+end)
+
+closeButton.MouseButton1Down:Connect(function()
+	local ripple = Instance.new("Frame")
+	ripple.Size = UDim2.new(0, 0, 0, 0)
+	ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+	ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+	ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ripple.BackgroundTransparency = 0.3
+	ripple.Parent = closeButton
+	local rippleCorner = Instance.new("UICorner", ripple)
+	rippleCorner.CornerRadius = UDim.new(1, 0)
+	TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}):Play()
+	task.delay(0.3, function() ripple:Destroy() end)
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)})
+	closeTween:Play()
+	closeTween.Completed:Connect(function() 
+		screenGui:Destroy() 
+	end)
+end)
+
 
 local tabButtonsFrame = Instance.new("Frame")
 tabButtonsFrame.Name = "TabButtonsFrame"
@@ -881,51 +1071,53 @@ tabButtonsFrame.BackgroundTransparency = 1
 local tabContentFrame = Instance.new("Frame")
 tabContentFrame.Name = "TabContentFrame"
 tabContentFrame.Parent = mainFrame
-tabContentFrame.Size = UDim2.new(1, 0, 1, -70)
+tabContentFrame.Size = UDim2.new(1, 0, 1, -50)
 tabContentFrame.Position = UDim2.new(0, 0, 0, 120)
 tabContentFrame.BackgroundTransparency = 1
 tabContentFrame.ClipsDescendants = true
+
 local contentPadding = Instance.new("UIPadding", tabContentFrame)
 contentPadding.PaddingTop = UDim.new(0, 10)
 contentPadding.PaddingBottom = UDim.new(0, 10)
-contentPadding.PaddingLeft = UDim.new(0, 10)
-contentPadding.PaddingRight = UDim.new(0, 10)
+contentPadding.PaddingLeft = UDim.new(0, 20)
+contentPadding.PaddingRight = UDim.new(0, 20)
+
+local contentLayout = Instance.new("UIListLayout", tabContentFrame)
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.Padding = UDim.new(0, 10)
+
 
 local dragging = false
 local dragInput, dragStart, startPos
 local targetPos = mainFrame.Position
-
 titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        targetPos = startPos
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		targetPos = startPos
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
 end)
-
 titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
 end)
-
 RunService.RenderStepped:Connect(function()
-    if dragging then
-        mainFrame.Position = mainFrame.Position:Lerp(targetPos, 0.2)
-    end
+	if dragging then
+		mainFrame.Position = mainFrame.Position:Lerp(targetPos, 0.2)
+	end
 end)
 
 local windowAPI = {}
@@ -935,14 +1127,16 @@ windowAPI.Tabs = {}
 windowAPI.ActiveTab = nil
 
 
+
+
 -- Tabs
 local TweenService = game:GetService("TweenService")
-
-local TweenService = game:GetService("TweenService")
 local function tween(object, properties, duration, easingStyle, easingDirection, delay, callback)
-	local tweenInfo = TweenInfo.new(duration or 0.25, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out, 0, false, delay or 0)
+	local tweenInfo = TweenInfo.new(duration or 0.3, easingStyle or Enum.EasingStyle.Sine, easingDirection or Enum.EasingDirection.Out, 0, false, delay or 0)
 	local t = TweenService:Create(object, tweenInfo, properties)
-	if callback then t.Completed:Connect(callback) end
+	if callback then
+		t.Completed:Connect(callback)
+	end
 	t:Play()
 	return t
 end
@@ -952,6 +1146,8 @@ local function createTab(windowAPI, tabName)
 	tab.Name = tabName
 	tab.Sections = {}
 	local tabButtonsFrame = windowAPI.TabButtonsFrame
+	
+	-- Make sure the tab buttons frame has a UIListLayout.
 	if not tabButtonsFrame:FindFirstChildOfClass("UIListLayout") then
 		local listLayout = Instance.new("UIListLayout")
 		listLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -960,101 +1156,140 @@ local function createTab(windowAPI, tabName)
 		listLayout.Padding = UDim.new(0, 5)
 		listLayout.Parent = tabButtonsFrame
 	end
+
+	-- Create the tab button using a blue theme.
 	local tabButton = Instance.new("TextButton")
 	tabButton.Name = "TabButton"
 	tabButton.Text = tabName
 	tabButton.Size = UDim2.new(0, 120, 1, 0)
-	tabButton.BackgroundColor3 = Color3.fromRGB(235, 235, 235)
-	tabButton.TextColor3 = Color3.fromRGB(40, 40, 40)
+	-- Normal state: a nice blue that contrasts well with a black background.
+	-- Text is white for clarity.
+	tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	tabButton.Font = Enum.Font.GothamBold
 	tabButton.TextSize = 16
 	tabButton.AutoButtonColor = false
+	tabButton.BorderSizePixel = 0
+	tabButton.ZIndex = 1
 	tabButton.Parent = tabButtonsFrame
+
+	-- Apply a subtle blue gradient.
 	local buttonGradient = Instance.new("UIGradient")
 	buttonGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(235, 235, 235)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(225, 225, 225))
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(52, 152, 219)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(42, 132, 199))
 	})
 	buttonGradient.Rotation = 90
 	buttonGradient.Parent = tabButton
+
+	-- Rounded corners.
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = tabButton
+
+	-- Active indicator (kept as before).
 	local indicator = Instance.new("Frame")
 	indicator.Name = "ActiveIndicator"
 	indicator.Size = UDim2.new(1, 0, 0, 3)
 	indicator.Position = UDim2.new(0, 0, 1, -3)
 	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 	indicator.BackgroundTransparency = 1
+	indicator.BorderSizePixel = 0
+	indicator.ZIndex = 3
 	indicator.Parent = tabButton
+
+	-- UIScale for smooth scaling effects.
 	local scaleObj = Instance.new("UIScale")
 	scaleObj.Scale = 1
 	scaleObj.Parent = tabButton
+
+	-- Mouse hover: scale up slightly and change to a lighter blue.
 	tabButton.MouseEnter:Connect(function()
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, {Scale = 1.05}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(245, 245, 245)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(scaleObj, {Scale = 1.05}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(74, 168, 230)}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		end
 	end)
 	tabButton.MouseLeave:Connect(function()
 		if windowAPI.ActiveTab ~= tab then
-			tween(scaleObj, {Scale = 1}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(235, 235, 235)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			tween(scaleObj, {Scale = 1}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			tween(tabButton, {BackgroundColor3 = Color3.fromRGB(52, 152, 219)}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		end
 	end)
+
+	-- On click, reset all tabs then activate this one.
 	tabButton.MouseButton1Click:Connect(function()
 		for _, t in pairs(windowAPI.Tabs) do
 			if t.Button then
-				tween(t.Button, {BackgroundColor3 = Color3.fromRGB(235, 235, 235)}, 0.2)
+				tween(t.Button, {BackgroundColor3 = Color3.fromRGB(52, 152, 219)}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 				local ind = t.Button:FindFirstChild("ActiveIndicator")
-				if ind then tween(ind, {BackgroundTransparency = 1}, 0.2) end
+				if ind then
+					tween(ind, {BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+				end
 				local s = t.Button:FindFirstChildOfClass("UIScale")
-				if s then tween(s, {Scale = 1}, 0.2) end
+				if s then
+					tween(s, {Scale = 1}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+				end
 			end
 			if t.Content then
 				t.Content.Visible = false
 			end
 		end
-		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+		-- Active state: change to a slightly darker blue.
+		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(32, 132, 199)}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		if tabButton:FindFirstChild("ActiveIndicator") then
-			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.2)
+			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		end
 		tab.Content.Visible = true
 		windowAPI.ActiveTab = tab
 	end)
+
+	-- If this is the first tab, set it as active.
 	local initActive = not windowAPI.ActiveTab
 	if initActive then
-		windowAPI.ActiveTab = tab
-		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+		windowAPI.ActiveTab = tab 
+		tween(tabButton, {BackgroundColor3 = Color3.fromRGB(32, 132, 199)}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		if tabButton:FindFirstChild("ActiveIndicator") then
-			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.2)
+			tween(tabButton.ActiveIndicator, {BackgroundTransparency = 0}, 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 		end
 	end
+
+	-- Create the tab content container.
 	local tabContent = Instance.new("ScrollingFrame")
 	tabContent.Name = "TabContent_" .. tabName
 	tabContent.Size = UDim2.new(1, -10, 1, -10)
 	tabContent.Position = UDim2.new(0, 5, 0, 5)
+	tabContent.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	tabContent.BackgroundTransparency = 1
+	tabContent.BorderSizePixel = 0
 	tabContent.ScrollBarThickness = 4
 	tabContent.Visible = initActive
+	tabContent.ZIndex = 2
 	tabContent.Parent = windowAPI.TabContentFrame
-	local listLayout = Instance.new("UIListLayout", tabContent)
+
+	local listLayout = Instance.new("UIListLayout")
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Padding = UDim.new(0, 5)
+	listLayout.Parent = tabContent
+
 	tab.Button = tabButton
 	tab.Content = tabContent
+
 	function tab:AddSection(sectionName)
 		local section = {}
 		section.Name = sectionName
 		local sectionFrame = Instance.new("Frame")
 		sectionFrame.Name = "Section_" .. sectionName
-		sectionFrame.Size = UDim2.new(1, 0, 0, 100)
+		sectionFrame.Size = UDim2.new(1, 0, 0, 0)
 		sectionFrame.BackgroundTransparency = 1
 		sectionFrame.Parent = tabContent
-		local sectionLayout = Instance.new("UIListLayout", sectionFrame)
+
+		local sectionLayout = Instance.new("UIListLayout")
 		sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		sectionLayout.Padding = UDim.new(0, 5)
+		sectionLayout.Parent = sectionFrame
+
 		section.Frame = sectionFrame
+
 		function section:AddSlider(opts, callback)
 			createSlider(sectionFrame, opts, callback)
 		end
@@ -1064,13 +1299,14 @@ local function createTab(windowAPI, tabName)
 		function section:AddButton(opts, callback)
 			createButton(sectionFrame, opts, callback)
 		end
+
 		table.insert(tab.Sections, section)
 		return section
 	end
+
 	table.insert(windowAPI.Tabs, tab)
 	return tab
 end
-
 --------------------------------------------------
 -- Add a new tab via your windowAPI.
 --------------------------------------------------
@@ -1157,9 +1393,9 @@ local function fadeInAndShow(ui, duration)
 end
 
 --------------------------------------------------
--- Optional: Enhanced Blur Effect (Commented Out)
+-- blur effect
 --------------------------------------------------
---[[
+
 local BlurEffect = Instance.new("BlurEffect")
 BlurEffect.Size = 0
 BlurEffect.Parent = game.Lighting
@@ -1170,7 +1406,7 @@ local function setBlur(targetSize, duration)
 	local blurTween = TweenService:Create(BlurEffect, tweenInfo, { Size = targetSize })
 	blurTween:Play()
 end
---]]
+
 
 --------------------------------------------------
 -- UI Toggle Keybind Logic with Minimized Check
@@ -1313,21 +1549,6 @@ local toggles = {
     customSpeedEnabled = false
 }
 local customSpeed = 16 -- Default speed
-
--- Helper: Notify Function
-local function notify(title, content)
-    Rayfield:Notify({
-        Title = title,
-        Content = content,
-        Duration = 5,
-        Actions = {
-            Dismiss = {
-                Name = "OK",
-                Callback = function() end
-            }
-        }
-    })
-end
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")

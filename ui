@@ -232,8 +232,6 @@ local function createSlider(parent, opts, callback)
 	slider.ZIndex = 10
 	slider.Parent = parent
 
-	-- (Drop shadow removed for a cleaner, flat design)
-
 	-- Container Border & Rounded Corners
 	local containerStroke = Instance.new("UIStroke", slider)
 	containerStroke.Thickness = 2
@@ -254,14 +252,15 @@ local function createSlider(parent, opts, callback)
 		tween(containerStroke, {Color = Color3.fromRGB(100, 100, 100)}, 0.2)
 	end)
 
-	-- Content Container & Layout
-	local content = Instance.new("Frame")
-	content.Name = "Content"
-	content.Size = UDim2.new(1, 0, 1, 0)
-	content.Position = UDim2.new(0, 1, 0, 0)
-	content.BackgroundTransparency = 1
-	content.ZIndex = slider.ZIndex + 4
-	content.Parent = slider
+local content = Instance.new("Frame")
+content.Name = "Content"
+-- Adjust the container to occupy only the top portion (e.g. 20 pixels high) so that it doesn't overlap the slider track.
+content.Size = UDim2.new(1, 0, 0, 20)
+content.Position = UDim2.new(0, 1, 0, 0)
+content.BackgroundTransparency = 1
+content.ZIndex = slider.ZIndex + 4
+content.Parent = slider
+
 
 	local padding = Instance.new("UIPadding", content)
 	if opts.Organization then
@@ -308,18 +307,67 @@ local function createSlider(parent, opts, callback)
 	titleLabel.ZIndex = content.ZIndex
 	titleLabel.Parent = content
 
-	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Name = "ValueLabel"
-	valueLabel.Size = UDim2.new(1, 0, 0, 25)
-	valueLabel.BackgroundTransparency = 1
-	valueLabel.Text = tostring(defaultValue)
-	valueLabel.Font = Enum.Font.GothamSemibold
-	valueLabel.TextSize = 22
-	valueLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-	valueLabel.TextXAlignment = Enum.TextXAlignment.Left
-	valueLabel.TextStrokeTransparency = 0.8
-	valueLabel.ZIndex = content.ZIndex
-	valueLabel.Parent = content
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local valueLabel = Instance.new("TextLabel")
+valueLabel.Name = "ValueLabel"
+valueLabel.Size = UDim2.new(1, 0, 0, 25)
+valueLabel.BackgroundTransparency = 1
+valueLabel.Text = tostring(defaultValue)
+valueLabel.Font = Enum.Font.GothamSemibold
+valueLabel.TextSize = 22
+valueLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+valueLabel.TextStrokeTransparency = 0.8
+valueLabel.ZIndex = content.ZIndex
+valueLabel.Parent = content
+
+-- Add a gradient to give the text a dynamic, shimmering effect.
+local valueGradient = Instance.new("UIGradient", valueLabel)
+valueGradient.Rotation = 0
+valueGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240, 240, 240)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 150, 255))
+})
+-- Start the gradient offset off to the left.
+valueGradient.Offset = Vector2.new(-0.3, 0)
+
+-- Continuously animate the gradient's offset for a smooth shimmer.
+coroutine.wrap(function()
+	while valueLabel and valueLabel.Parent do
+		local tweenForward = TweenService:Create(valueGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Offset = Vector2.new(0.3, 0)})
+		tweenForward:Play()
+		tweenForward.Completed:Wait()
+		local tweenBackward = TweenService:Create(valueGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Offset = Vector2.new(-0.3, 0)})
+		tweenBackward:Play()
+		tweenBackward.Completed:Wait()
+	end
+end)()
+
+-- Add a UIScale for a pulsing effect when the value updates.
+local valueScale = Instance.new("UIScale", valueLabel)
+valueScale.Scale = 1
+
+-- Function to update the valueLabel with a cool pulse and number-switch animation.
+-- Call updateValueLabel(newValue) whenever you need to update the slider's value.
+local function updateValueLabel(newValue)
+	-- Pulse up
+	local pulseUp = TweenService:Create(valueScale, TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Scale = 1.3})
+	-- Pulse down
+	local pulseDown = TweenService:Create(valueScale, TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.In), {Scale = 1})
+	
+	pulseUp:Play()
+	pulseUp.Completed:Wait()
+	-- Update the displayed value
+	valueLabel.Text = tostring(newValue)
+	pulseDown:Play()
+end
+
+-- Example usage (replace with your actual update logic):
+-- updateValueLabel(75)
+
 
 	-- Track (Slider Bar)
 	local track = Instance.new("Frame")
@@ -505,12 +553,41 @@ local function createToggle(parent, opts, callback)
 	local defaultState = opts.Default or false
 
 	-- Outer Container: Fixed size for proper layout.
-	local container = Instance.new("Frame")
-	container.Name = "ToggleContainer"
-	container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
-	container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	container.BackgroundTransparency = 0
-	container.Parent = parent
+local TweenService = game:GetService("TweenService")
+
+local container = Instance.new("Frame")
+container.Name = "ToggleContainer"
+container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
+container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+container.BackgroundTransparency = 0
+container.Parent = parent
+
+-- Rounded corners for a smooth, modern look.
+local containerCorner = Instance.new("UICorner", container)
+containerCorner.CornerRadius = UDim.new(0, 10)
+
+-- A subtle stroke to define the container's edges.
+local containerStroke = Instance.new("UIStroke", container)
+containerStroke.Thickness = 2
+containerStroke.Color = Color3.fromRGB(80, 80, 80)
+containerStroke.Transparency = 0.2
+
+-- A refined vertical gradient that gives depth.
+local containerGradient = Instance.new("UIGradient", container)
+containerGradient.Rotation = 90
+containerGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 35)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+})
+
+-- OPTIONAL: Subtle hover animation to highlight the container when the mouse is over it.
+container.MouseEnter:Connect(function()
+	TweenService:Create(containerStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Color = Color3.fromRGB(0, 150, 255)}):Play()
+end)
+container.MouseLeave:Connect(function()
+	TweenService:Create(containerStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
+end)
+
 
 	-- Drop Shadow for depth.
 	local shadow = Instance.new("Frame")
@@ -803,6 +880,120 @@ local function createButton(parent, opts, callback)
 end
 
 ---------------------------
+-- Color Picker 
+---------------------------
+local function createColorPicker(opts, callback)
+	opts = opts or {}
+	local labelText = opts.Label or "Color Picker"
+	local defaultColor = opts.Default or Color3.fromRGB(0,150,255)
+	local size = opts.Size or UDim2.new(0,200,0,200)
+	
+	-- Container for the color picker
+	local container = Instance.new("Frame")
+	container.Name = "ColorPickerContainer"
+	container.Size = size
+	container.BackgroundColor3 = Color3.fromRGB(20,20,20)
+	container.BorderSizePixel = 0
+	container.Parent = opts.Parent or game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+	
+	-- Label at the top
+	local label = Instance.new("TextLabel")
+	label.Name = "PickerLabel"
+	label.Size = UDim2.new(1,0,0,25)
+	label.Position = UDim2.new(0,0,0,0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 22
+	label.TextColor3 = Color3.fromRGB(240,240,240)
+	label.Parent = container
+	
+	-- The main area for picking a color
+	local pickerFrame = Instance.new("Frame")
+	pickerFrame.Name = "PickerFrame"
+	pickerFrame.Size = UDim2.new(1,0,1,-25)
+	pickerFrame.Position = UDim2.new(0,0,0,25)
+	pickerFrame.BackgroundColor3 = Color3.new(1,1,1)
+	pickerFrame.BackgroundTransparency = 0
+	pickerFrame.BorderSizePixel = 0
+	pickerFrame.Parent = container
+	
+	-- Full-spectrum hue gradient
+	local hueGradient = Instance.new("UIGradient", pickerFrame)
+	hueGradient.Rotation = 0
+	hueGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1,0,0)),       -- Red
+		ColorSequenceKeypoint.new(0.17, Color3.new(1,1,0)),      -- Yellow
+		ColorSequenceKeypoint.new(0.34, Color3.new(0,1,0)),      -- Green
+		ColorSequenceKeypoint.new(0.51, Color3.new(0,1,1)),      -- Cyan
+		ColorSequenceKeypoint.new(0.68, Color3.new(0,0,1)),      -- Blue
+		ColorSequenceKeypoint.new(0.85, Color3.new(1,0,1)),      -- Magenta
+		ColorSequenceKeypoint.new(1, Color3.new(1,0,0))          -- Back to Red
+	})
+	
+	-- Overlay for saturation/value control
+	local overlay = Instance.new("Frame", pickerFrame)
+	overlay.Name = "SaturationOverlay"
+	overlay.Size = UDim2.new(1,0,1,0)
+	overlay.Position = UDim2.new(0,0,0,0)
+	overlay.BackgroundTransparency = 1
+	overlay.ZIndex = 2
+	
+	local overlayGradient = Instance.new("UIGradient", overlay)
+	overlayGradient.Rotation = 90
+	overlayGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),  -- full brightness/saturation
+		ColorSequenceKeypoint.new(1, Color3.new(0,0,0))   -- dark
+	})
+	
+	-- Display for the currently selected color (optional visual feedback)
+	local selectedDisplay = Instance.new("Frame")
+	selectedDisplay.Name = "SelectedDisplay"
+	selectedDisplay.Size = UDim2.new(0,40,0,40)
+	selectedDisplay.Position = UDim2.new(1, -45, 1, -45)
+	selectedDisplay.BackgroundColor3 = defaultColor
+	selectedDisplay.BorderSizePixel = 0
+	selectedDisplay.Parent = container
+	selectedDisplay.ZIndex = 3
+	
+	-- When the user clicks or drags on the pickerFrame, update the chosen color.
+	local function updateColor(input)
+		local absPos = pickerFrame.AbsolutePosition
+		local absSize = pickerFrame.AbsoluteSize
+		local relX = math.clamp((input.Position.X - absPos.X) / absSize.X, 0, 1)
+		local relY = math.clamp((input.Position.Y - absPos.Y) / absSize.Y, 0, 1)
+		-- Use X as Hue, and Y (inverted) as Saturation; value is fixed at 1.
+		local chosenColor = Color3.fromHSV(relX, 1 - relY, 1)
+		selectedDisplay.BackgroundColor3 = chosenColor
+		if callback then
+			callback(chosenColor)
+		end
+	end
+	
+	pickerFrame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			updateColor(input)
+		end
+	end)
+	pickerFrame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			updateColor(input)
+		end
+	end)
+	
+	return container
+end
+
+-- Example usage:
+-- exampleSection:AddColorPicker({
+--     Label = "Pick a Color",
+--     Default = Color3.fromRGB(0,150,255),
+--     Size = UDim2.new(0,200,0,200)
+-- }, function(chosenColor)
+--     print("Chosen color:", chosenColor)
+--     -- Additional functionality goes here.
+-- end)
+
 -- Base UI Window & Tab System with Sections
 ---------------------------
 local UserInputService = game:GetService("UserInputService")
@@ -1076,15 +1267,9 @@ tabContentFrame.Position = UDim2.new(0, 0, 0, 120)
 tabContentFrame.BackgroundTransparency = 1
 tabContentFrame.ClipsDescendants = true
 
-local contentPadding = Instance.new("UIPadding", tabContentFrame)
-contentPadding.PaddingTop = UDim.new(0, 10)
-contentPadding.PaddingBottom = UDim.new(0, 10)
-contentPadding.PaddingLeft = UDim.new(0, 20)
-contentPadding.PaddingRight = UDim.new(0, 20)
-
 local contentLayout = Instance.new("UIListLayout", tabContentFrame)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-contentLayout.Padding = UDim.new(0, 10)
+contentLayout.Padding = UDim.new(0, 0)
 
 
 local dragging = false
@@ -1125,9 +1310,6 @@ windowAPI.TabButtonsFrame = tabButtonsFrame
 windowAPI.TabContentFrame = tabContentFrame
 windowAPI.Tabs = {}
 windowAPI.ActiveTab = nil
-
-
-
 
 -- Tabs
 local TweenService = game:GetService("TweenService")
@@ -1186,16 +1368,29 @@ local function createTab(windowAPI, tabName)
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = tabButton
 
-	-- Active indicator (kept as before).
-	local indicator = Instance.new("Frame")
-	indicator.Name = "ActiveIndicator"
-	indicator.Size = UDim2.new(1, 0, 0, 3)
-	indicator.Position = UDim2.new(0, 0, 1, -3)
-	indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-	indicator.BackgroundTransparency = 1
-	indicator.BorderSizePixel = 0
-	indicator.ZIndex = 3
-	indicator.Parent = tabButton
+local TweenService = game:GetService("TweenService")
+
+local indicator = Instance.new("Frame")
+indicator.Name = "ActiveIndicator"
+-- Start with zero width so the animation can slide in.
+indicator.Size = UDim2.new(0, 0, 0, 3)
+indicator.Position = UDim2.new(0, 0, 1, -3)
+indicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+indicator.BackgroundTransparency = 0
+indicator.BorderSizePixel = 0
+indicator.ZIndex = 3
+indicator.Parent = tabButton
+
+local gradient = Instance.new("UIGradient", indicator)
+gradient.Rotation = 90
+gradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+})
+
+-- Animate the indicator to slide in and fill the entire width of the tab button.
+TweenService:Create(indicator, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 3)}):Play()
+
 
 	-- UIScale for smooth scaling effects.
 	local scaleObj = Instance.new("UIScale")
@@ -1274,35 +1469,38 @@ local function createTab(windowAPI, tabName)
 	tab.Button = tabButton
 	tab.Content = tabContent
 
-	function tab:AddSection(sectionName)
-		local section = {}
-		section.Name = sectionName
-		local sectionFrame = Instance.new("Frame")
-		sectionFrame.Name = "Section_" .. sectionName
-		sectionFrame.Size = UDim2.new(1, 0, 0, 0)
-		sectionFrame.BackgroundTransparency = 1
-		sectionFrame.Parent = tabContent
+function tab:AddSection(sectionName)
+	local section = {}
+	section.Name = sectionName
+	local sectionFrame = Instance.new("Frame")
+	sectionFrame.Name = "Section_" .. sectionName
+	sectionFrame.Size = UDim2.new(1, 0, 0, 0)
+	sectionFrame.BackgroundTransparency = 1
+	sectionFrame.Parent = tabContent
 
-		local sectionLayout = Instance.new("UIListLayout")
-		sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		sectionLayout.Padding = UDim.new(0, 5)
-		sectionLayout.Parent = sectionFrame
+	local sectionLayout = Instance.new("UIListLayout", sectionFrame)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Padding = UDim.new(0, 5)
 
-		section.Frame = sectionFrame
+	section.Frame = sectionFrame
 
-		function section:AddSlider(opts, callback)
-			createSlider(sectionFrame, opts, callback)
-		end
-		function section:AddToggle(opts, callback)
-			createToggle(sectionFrame, opts, callback)
-		end
-		function section:AddButton(opts, callback)
-			createButton(sectionFrame, opts, callback)
-		end
-
-		table.insert(tab.Sections, section)
-		return section
+	function section:AddSlider(opts, callback)
+		createSlider(sectionFrame, opts, callback)
 	end
+	function section:AddToggle(opts, callback)
+		createToggle(sectionFrame, opts, callback)
+	end
+	function section:AddButton(opts, callback)
+		createButton(sectionFrame, opts, callback)
+	end
+	function section:AddColorPicker(opts, callback)
+		-- Create the Color Picker UI element and parent it to the sectionFrame.
+		createColorPicker(opts, callback).Parent = sectionFrame
+	end
+
+	table.insert(tab.Sections, section)
+	return section
+end
 
 	table.insert(windowAPI.Tabs, tab)
 	return tab
@@ -1350,28 +1548,64 @@ end
 --------------------------------------------------
 local function fadeOutAndHide(ui, duration)
 	duration = duration or 0.35
-	-- Iterate over all GUI descendants and tween their transparencies.
+	local delayIncrement = 0.02
+	local currentDelay = 0
+	
+	-- Iterate through all GUI descendants for a cascading fade-out effect.
 	for _, descendant in ipairs(ui:GetDescendants()) do
 		if descendant:IsA("GuiObject") then
-			-- Store the original BackgroundTransparency if not already stored.
-			if descendant.BackgroundTransparency ~= nil and descendant:GetAttribute("origBackgroundTransparency") == nil then
-				descendant:SetAttribute("origBackgroundTransparency", descendant.BackgroundTransparency)
-			end
-			tween(descendant, { BackgroundTransparency = 1 }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-			-- For text objects, store and tween the TextTransparency.
-			if (descendant:IsA("TextLabel") or descendant:IsA("TextButton")) and descendant.TextTransparency ~= nil then
-				if descendant:GetAttribute("origTextTransparency") == nil then
-					descendant:SetAttribute("origTextTransparency", descendant.TextTransparency)
+			-- Fade out the BackgroundTransparency.
+			if descendant.BackgroundTransparency ~= nil then
+				if descendant:GetAttribute("origBackgroundTransparency") == nil then
+					descendant:SetAttribute("origBackgroundTransparency", descendant.BackgroundTransparency)
 				end
-				tween(descendant, { TextTransparency = 1 }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+				TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, false, currentDelay), 
+					{BackgroundTransparency = 1}):Play()
 			end
+			
+			-- Fade out the TextTransparency for text elements.
+			if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
+				if descendant.TextTransparency ~= nil then
+					if descendant:GetAttribute("origTextTransparency") == nil then
+						descendant:SetAttribute("origTextTransparency", descendant.TextTransparency)
+					end
+					TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, false, currentDelay), 
+						{TextTransparency = 1}):Play()
+				end
+			end
+			
+			-- Fade out the ImageTransparency for image elements.
+			if descendant:IsA("ImageLabel") or descendant:IsA("ImageButton") then
+				if descendant.ImageTransparency ~= nil then
+					if descendant:GetAttribute("origImageTransparency") == nil then
+						descendant:SetAttribute("origImageTransparency", descendant.ImageTransparency)
+					end
+					TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, false, currentDelay), 
+						{ImageTransparency = 1}):Play()
+				end
+			end
+			
+			-- Fade out any UIStroke objects within the descendant.
+			for _, child in ipairs(descendant:GetChildren()) do
+				if child:IsA("UIStroke") then
+					if child:GetAttribute("origStrokeTransparency") == nil then
+						child:SetAttribute("origStrokeTransparency", child.Transparency)
+					end
+					TweenService:Create(child, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, false, currentDelay), 
+						{Transparency = 1}):Play()
+				end
+			end
+			
+			currentDelay = currentDelay + delayIncrement
 		end
 	end
-	-- After tweening, disable the UI.
-	delay(duration, function()
+	
+	-- After all tweening completes, hide the UI.
+	delay(duration + currentDelay, function()
 		ui.Visible = false
 	end)
 end
+
 
 --------------------------------------------------
 -- Fade In and Show Function
@@ -1379,18 +1613,63 @@ end
 local function fadeInAndShow(ui, duration)
 	duration = duration or 0.35
 	ui.Visible = true
-	-- Iterate over all GUI descendants and tween transparencies back to their stored values.
+	
+	-- Optionally, apply a cascade delay based on the descendant's order for a polished effect.
+	local delayIncrement = 0.01
+	local currentDelay = 0
+	
+	-- Iterate through all GUI descendants to restore their original transparency properties.
 	for _, descendant in ipairs(ui:GetDescendants()) do
 		if descendant:IsA("GuiObject") then
-			local targetBg = descendant:GetAttribute("origBackgroundTransparency") or 0
-			tween(descendant, { BackgroundTransparency = targetBg }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-			if descendant:IsA("TextLabel") or descendant:IsA("TextButton") then
-				local targetText = descendant:GetAttribute("origTextTransparency") or 0
-				tween(descendant, { TextTransparency = targetText }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			-- Restore BackgroundTransparency
+			local origBg = descendant:GetAttribute("origBackgroundTransparency")
+			if origBg == nil then
+				origBg = 0
+				descendant:SetAttribute("origBackgroundTransparency", origBg)
 			end
+			TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
+				{BackgroundTransparency = origBg}):Play()
+			
+			-- Restore TextTransparency for text-based elements
+			if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
+				local origText = descendant:GetAttribute("origTextTransparency")
+				if origText == nil then
+					origText = 0
+					descendant:SetAttribute("origTextTransparency", origText)
+				end
+				TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
+					{TextTransparency = origText}):Play()
+			end
+
+			-- Restore ImageTransparency for image-based elements
+			if descendant:IsA("ImageLabel") or descendant:IsA("ImageButton") then
+				local origImage = descendant:GetAttribute("origImageTransparency")
+				if origImage == nil then
+					origImage = 0
+					descendant:SetAttribute("origImageTransparency", origImage)
+				end
+				TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
+					{ImageTransparency = origImage}):Play()
+			end
+
+			-- If the descendant has any UIStroke objects, restore their transparency as well
+			for _, child in ipairs(descendant:GetChildren()) do
+				if child:IsA("UIStroke") then
+					local origStroke = child:GetAttribute("origStrokeTransparency")
+					if origStroke == nil then
+						origStroke = child.Transparency or 0
+						child:SetAttribute("origStrokeTransparency", origStroke)
+					end
+					TweenService:Create(child, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
+						{Transparency = origStroke}):Play()
+				end
+			end
+			
+			currentDelay = currentDelay + delayIncrement
 		end
 	end
 end
+
 
 --------------------------------------------------
 -- blur effect
@@ -1415,41 +1694,65 @@ local uiVisible = true
 local debounce = false
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	if gameProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then
+		return
+	end
 	
+	-- Only trigger on the "K" key and if not debounced.
 	if input.KeyCode == Enum.KeyCode.K and input.UserInputState == Enum.UserInputState.Begin and not debounce then
 		debounce = true
 		
+		-- Check for the CometUI instance.
 		local cometUI = game.CoreGui:FindFirstChild("CometUI")
-		if cometUI then
-			local mainFrame = cometUI:FindFirstChild("MainFrame")
-			-- Check if the UI is minimized (attribute "Minimized" is true)
-			if mainFrame:GetAttribute("Minimized") then
-				-- Restore the minimized UI.
-				mainFrame:SetAttribute("Minimized", false)
-				uiVisible = true
-				fadeInAndShow(mainFrame, 0.35)
-				-- If you use additional elements (like drop shadows), fade them in here.
-			else
-				-- Toggle UI visibility as usual.
-				uiVisible = not uiVisible
-				if uiVisible then
-					fadeInAndShow(mainFrame, 0.35)
-				else
-					fadeOutAndHide(mainFrame, 0.35)
-					StarterGui:SetCore("SendNotification", {
-						Title = "UI Hidden",
-						Text = "Press K to restore the UI.",
-						Duration = 5,
-					})
-				end
+		if not cometUI then
+			debounce = false
+			return
+		end
+		
+		-- Remove duplicate UI instances if any.
+		for _, child in ipairs(game.CoreGui:GetChildren()) do
+			if child.Name == "CometUI" and child ~= cometUI then
+				child:Destroy()
 			end
+		end
+		
+		-- Get the main frame.
+		local mainFrame = cometUI:FindFirstChild("MainFrame")
+		if not mainFrame then
+			debounce = false
+			return
+		end
+		
+		-- Ensure the main frame has a "Minimized" attribute.
+		local minimized = mainFrame:GetAttribute("Minimized")
+		if minimized == nil then
+			minimized = false
+			mainFrame:SetAttribute("Minimized", false)
+		end
+		
+		-- Toggle the UI:
+		-- If the UI is not visible or is marked as minimized, restore it.
+		if (not mainFrame.Visible) or minimized then
+			mainFrame:SetAttribute("Minimized", false)
+			uiVisible = true
+			fadeInAndShow(mainFrame, 0.35)
+		else
+			-- Otherwise, minimize (hide) the UI.
+			uiVisible = false
+			mainFrame:SetAttribute("Minimized", true)
+			fadeOutAndHide(mainFrame, 0.35)
+			StarterGui:SetCore("SendNotification", {
+				Title = "UI Hidden",
+				Text = "Press K to restore the UI.",
+				Duration = 5,
+			})
 		end
 		
 		wait(0.35)
 		debounce = false
 	end
 end)
+
 
 ---------------------------
 -- Expose the Base Window API Globally via a CometUI module
@@ -1481,54 +1784,97 @@ local MovementSection = MovementTab:AddSection("Movement")
 
 FPSBooster = {}
 
+local FPSBooster = {}
+
 function FPSBooster:Boost()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.SmoothPlastic
-            obj.Reflectance = 0
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-            obj.Enabled = false
-        elseif obj:IsA("Beam") then
-            obj.Enabled = false
-        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-            obj.Enabled = false
-        end
-    end
-    local Lighting = game:GetService("Lighting")
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 9e9
-    Lighting.Brightness = 1
-    Lighting.EnvironmentSpecularScale = 0
-    Lighting.EnvironmentDiffuseScale = 0
-    if workspace:FindFirstChildOfClass("Terrain") then
-        workspace.Terrain.Decoration = false
-    end
+	local Lighting = game:GetService("Lighting")
+	
+	self.OriginalLighting = {
+		GlobalShadows = Lighting.GlobalShadows,
+		FogEnd = Lighting.FogEnd,
+		Brightness = Lighting.Brightness,
+		EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
+		EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
+	}
+	
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			if not obj:GetAttribute("OrigMaterial") then
+				obj:SetAttribute("OrigMaterial", obj.Material.Name)
+				obj:SetAttribute("OrigReflectance", obj.Reflectance)
+			end
+			obj.Material = Enum.Material.SmoothPlastic
+			obj.Reflectance = 0
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+			if obj:GetAttribute("OrigEnabled") == nil then
+				obj:SetAttribute("OrigEnabled", obj.Enabled)
+			end
+			obj.Enabled = false
+		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+			if obj:GetAttribute("OrigEnabled") == nil then
+				obj:SetAttribute("OrigEnabled", obj.Enabled)
+			end
+			obj.Enabled = false
+		end
+	end
+	
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9
+	Lighting.Brightness = 1
+	Lighting.EnvironmentSpecularScale = 0
+	Lighting.EnvironmentDiffuseScale = 0
+	
+	if workspace:FindFirstChildOfClass("Terrain") then
+		workspace.Terrain.Decoration = false
+	end
 end
 
 function FPSBooster:Revert()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Plastic
-            obj.Reflectance = 0.5  -- Adjust as needed
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-            obj.Enabled = true
-        elseif obj:IsA("Beam") then
-            obj.Enabled = true
-        elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-            obj.Enabled = true
-        end
-    end
-    local Lighting = game:GetService("Lighting")
-    Lighting.GlobalShadows = true
-    Lighting.FogEnd = 100000  -- Adjust to your game's default
-    Lighting.Brightness = 2   -- Adjust as needed
-    Lighting.EnvironmentSpecularScale = 1
-    Lighting.EnvironmentDiffuseScale = 1
-    if workspace:FindFirstChildOfClass("Terrain") then
-        workspace.Terrain.Decoration = true
-    end
+	local Lighting = game:GetService("Lighting")
+	
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local origMat = obj:GetAttribute("OrigMaterial")
+			local origRef = obj:GetAttribute("OrigReflectance")
+			if origMat then
+				-- Use the original material name to revert, or fallback to Plastic.
+				obj.Material = Enum.Material[origMat] or Enum.Material.Plastic
+			else
+				obj.Material = Enum.Material.Plastic
+			end
+			if origRef ~= nil then
+				obj.Reflectance = origRef
+			else
+				obj.Reflectance = 0.5 -- Fallback value if not stored
+			end
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+			local origEnabled = obj:GetAttribute("OrigEnabled")
+			obj.Enabled = (origEnabled ~= nil) and origEnabled or true
+		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+			local origEnabled = obj:GetAttribute("OrigEnabled")
+			obj.Enabled = (origEnabled ~= nil) and origEnabled or true
+		end
+	end
+	
+	-- Restore Lighting settings
+	if self.OriginalLighting then
+		Lighting.GlobalShadows = self.OriginalLighting.GlobalShadows
+		Lighting.FogEnd = self.OriginalLighting.FogEnd
+		Lighting.Brightness = self.OriginalLighting.Brightness
+		Lighting.EnvironmentSpecularScale = self.OriginalLighting.EnvironmentSpecularScale
+		Lighting.EnvironmentDiffuseScale = self.OriginalLighting.EnvironmentDiffuseScale
+	else
+		Lighting.GlobalShadows = true
+		Lighting.FogEnd = 100000
+		Lighting.Brightness = 2
+		Lighting.EnvironmentSpecularScale = 1
+		Lighting.EnvironmentDiffuseScale = 1
+	end
+	
+	if workspace:FindFirstChildOfClass("Terrain") then
+		workspace.Terrain.Decoration = true
+	end
 end
-
 
 -- FPS Booster Toggle in the FPS Section
 fpsSection:AddToggle({ 
@@ -1744,5 +2090,14 @@ MovementSection:AddSlider({
 }, function(Value)
     flySpeed = Value
 end)
+
+ MovementSection:AddColorPicker({
+    Label = "Pick a Color",
+    Default = Color3.fromRGB(0,150,255),
+    Size = UDim2.new(0,200,0,200)
+}, function(chosenColor)
+print("Chosen color:", chosenColor)
+     -- Additional functionality goes here.
+ end)
 
 

@@ -31,14 +31,17 @@ loadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 loadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 loadingFrame.BackgroundTransparency = 1
 
--- Comet label with animated gradient and pulsing text size
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local startTime = tick()
+
 local cometLabel = Instance.new("TextLabel")
 cometLabel.Name = "CometLabel"
 cometLabel.Parent = loadingFrame
 cometLabel.Size = UDim2.new(1, 0, 1, 0)
 cometLabel.BackgroundTransparency = 1
 cometLabel.Text = "Comet"
-cometLabel.Font = Enum.Font.GothamSemibold
+cometLabel.Font = Enum.Font.GothamBlack
 cometLabel.TextSize = 72
 cometLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 cometLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -49,33 +52,27 @@ local textGradient = Instance.new("UIGradient", cometLabel)
 textGradient.Rotation = 0
 textGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,150,255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(220,220,220))
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240,240,240)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,150,255))
 })
-textGradient.Offset = Vector2.new(0, 0)
+-- Start the gradient offset to the left
+textGradient.Offset = Vector2.new(-0.2, 0)
 
--- Animate the text gradient offset in a looping cycle
-coroutine.wrap(function()
-	while true do
-		local tween1 = TweenService:Create(textGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Offset = Vector2.new(1, 0)})
-		tween1:Play()
-		tween1.Completed:Wait()
-		local tween2 = TweenService:Create(textGradient, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Offset = Vector2.new(0, 0)})
-		tween2:Play()
-		tween2.Completed:Wait()
-	end
-end)()
+-- Use RenderStepped to continuously and smoothly animate the gradient and pulse the text size.
+RunService.RenderStepped:Connect(function()
+	local t = tick() - startTime
+	
+	-- Animate gradient offset smoothly over a 6-second cycle.
+	-- Oscillates between -0.2 and 0.2.
+	local offsetX = -0.2 + 0.4 * ((math.sin(t * (2 * math.pi / 6)) + 1) / 2)
+	textGradient.Offset = Vector2.new(offsetX, 0)
+	
+	-- Pulse the text size smoothly over a 4-second cycle.
+	-- Oscillates between 72 and 80.
+	local newSize = 72 + 8 * ((math.sin(t * (2 * math.pi / 4)) + 1) / 2)
+	cometLabel.TextSize = newSize
+end)
 
--- Pulse the text size for a subtle breathing effect
-coroutine.wrap(function()
-	while true do
-		local pulseUp = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize = 80})
-		pulseUp:Play()
-		pulseUp.Completed:Wait()
-		local pulseDown = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize = 72})
-		pulseDown:Play()
-		pulseDown.Completed:Wait()
-	end
-end)()
 
 -- Function to spawn a custom-made comet (a Frame with gradient transparency)
 local function spawnComet()
@@ -233,33 +230,88 @@ local function createSlider(parent, opts, callback)
 	slider.Parent = parent
 
 	-- Container Border & Rounded Corners
-	local containerStroke = Instance.new("UIStroke", slider)
-	containerStroke.Thickness = 2
-	containerStroke.Color = Color3.fromRGB(100, 100, 100)
-	containerStroke.Transparency = 0.2
-	local containerCorner = Instance.new("UICorner", slider)
-	containerCorner.CornerRadius = UDim.new(0, 10)
+-- Assume "slider" is an existing Frame representing your slider container.
+-- For demonstration, we assume slider is already parented to an appropriate parent.
+-- (Make sure to adjust "parent" or the initial properties if necessary.)
 
-	-- Hover effect on the slider container
-	local scaleObj = Instance.new("UIScale", slider)
-	scaleObj.Scale = 1
-	slider.MouseEnter:Connect(function()
-		tween(scaleObj, {Scale = 1.02}, 0.2)
-		tween(containerStroke, {Color = Color3.fromRGB(0, 150, 255)}, 0.2)
-	end)
-	slider.MouseLeave:Connect(function()
-		tween(scaleObj, {Scale = 1}, 0.2)
-		tween(containerStroke, {Color = Color3.fromRGB(100, 100, 100)}, 0.2)
-	end)
+-- Assume "slider" is your slider container (a Frame) already created and parented appropriately.
+-- Also assume you have a helper function "tween" defined (or replace with TweenService:Create calls directly).
+local TweenService = game:GetService("TweenService")
 
+-----------------------------------------------------------
+-- SLIDER CONTAINER STYLING
+-----------------------------------------------------------
+-- Create and configure the UIStroke on the slider.
+local containerStroke = Instance.new("UIStroke", slider)
+containerStroke.Thickness = 2
+containerStroke.Color = Color3.fromRGB(100, 100, 100)  -- initial color
+containerStroke.Transparency = 0.2
+
+-- Animate the stroke to pulse like your accentLine.
+local strokeColorTween = TweenService:Create(
+	containerStroke,
+	TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+	{ Color = Color3.fromRGB(0, 200, 255) }
+)
+strokeColorTween:Play()
+
+local strokeTransparencyTween = TweenService:Create(
+	containerStroke,
+	TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+	{ Transparency = 0.15 }
+)
+strokeTransparencyTween:Play()
+
+-- Add rounded corners.
+local containerCorner = Instance.new("UICorner", slider)
+containerCorner.CornerRadius = UDim.new(0, 10)
+
+-- Add a gradient background for extra depth.
+local sliderGradient = Instance.new("UIGradient", slider)
+sliderGradient.Rotation = 90
+sliderGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+})
+
+-----------------------------------------------------------
+-- HOVER & INTERACTION EFFECTS
+-----------------------------------------------------------
+-- Create a UIScale object to animate a subtle zoom on hover.
+local scaleObj = Instance.new("UIScale", slider)
+scaleObj.Scale = 1
+
+slider.MouseEnter:Connect(function()
+	-- Tween scale up.
+	tween(scaleObj, { Scale = 1.02 }, 0.2)
+	-- Optionally, tween the gradient to a slightly brighter tone.
+	tween(sliderGradient, { Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 30))
+	})}, 0.2)
+end)
+
+slider.MouseLeave:Connect(function()
+	-- Tween scale back to normal.
+	tween(scaleObj, { Scale = 1 }, 0.2)
+	-- Revert gradient colors.
+	tween(sliderGradient, { Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+	})}, 0.2)
+end)
+
+-----------------------------------------------------------
+-- CONTENT CONTAINER SETUP
+-----------------------------------------------------------
 local content = Instance.new("Frame")
 content.Name = "Content"
--- Adjust the container to occupy only the top portion (e.g. 20 pixels high) so that it doesn't overlap the slider track.
-content.Size = UDim2.new(1, 0, 0, 20)
-content.Position = UDim2.new(0, 1, 0, 0)
+content.Size = UDim2.new(1, 0, 0, 20)  -- Only occupies the top portion (20 pixels high)
+content.Position = UDim2.new(0, 0, 0, 0)
 content.BackgroundTransparency = 1
 content.ZIndex = slider.ZIndex + 4
 content.Parent = slider
+
 
 
 	local padding = Instance.new("UIPadding", content)
@@ -1010,6 +1062,16 @@ screenGui.Name = "CometUI"
 screenGui.Parent = game.CoreGui
 screenGui.IgnoreGuiInset = true
 
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- SERVICES
+local TweenService = game:GetService("TweenService")
+-- (Assume screenGui is already defined.)
+
+---------------------------------------------------------------------
+-- MAIN FRAME SETUP
+---------------------------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
@@ -1020,44 +1082,155 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 mainFrame.BackgroundTransparency = 0
 mainFrame.ClipsDescendants = true
 
+-- Rounded corners
 local mainCorner = Instance.new("UICorner", mainFrame)
 mainCorner.CornerRadius = UDim.new(0, 16)
 
+-- Stroke for a cool outline effect
 local mainStroke = Instance.new("UIStroke", mainFrame)
 mainStroke.Thickness = 3
 mainStroke.Color = Color3.fromRGB(0, 150, 255)
 mainStroke.Transparency = 0.1
 
-spawn(function()
-	while mainFrame and mainFrame.Parent do
-		TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 150, 255)}):Play()
-		wait(2)
-		TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 100, 180)}):Play()
-		wait(2)
-	end
-end)
+---------------------------------------------------------------------
+-- DYNAMIC (ANIMATED) GRADIENT
+---------------------------------------------------------------------
+-- This gradient creates a fluid, liquid-like background.
+local dynamicGradient = Instance.new("UIGradient")
+dynamicGradient.Name = "DynamicGradient"
+dynamicGradient.Rotation = 45
+dynamicGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 10)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 50, 100)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
+})
+dynamicGradient.Offset = Vector2.new(0, 0)
+dynamicGradient.Parent = mainFrame
 
-local mainGradient = Instance.new("UIGradient", mainFrame)
-mainGradient.Rotation = 90
-mainGradient.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 10)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+-- Animate the gradient's offset for a liquid flow effect.
+coroutine.wrap(function()
+    while mainFrame and mainFrame.Parent do
+        local tweenOffset1 = TweenService:Create(dynamicGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(0.5, 0.2)})
+        tweenOffset1:Play()
+        tweenOffset1.Completed:Wait()
+        local tweenOffset2 = TweenService:Create(dynamicGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(0, 0)})
+        tweenOffset2:Play()
+        tweenOffset2.Completed:Wait()
+    end
+end)()
+
+-- Animate the gradient's rotation to add extra fluidity.
+coroutine.wrap(function()
+    while mainFrame and mainFrame.Parent do
+        local tweenRot1 = TweenService:Create(dynamicGradient, TweenInfo.new(6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 60})
+        tweenRot1:Play()
+        tweenRot1.Completed:Wait()
+        local tweenRot2 = TweenService:Create(dynamicGradient, TweenInfo.new(6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 45})
+        tweenRot2:Play()
+        tweenRot2.Completed:Wait()
+    end
+end)()
+
+---------------------------------------------------------------------
+-- STROKE PULSE ANIMATION
+---------------------------------------------------------------------
+-- This coroutine animates the stroke's color to give a pulsing effect.
+coroutine.wrap(function()
+    while mainFrame and mainFrame.Parent do
+        local tweenStroke1 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 150, 255)})
+        tweenStroke1:Play()
+        tweenStroke1.Completed:Wait()
+        local tweenStroke2 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 100, 180)})
+        tweenStroke2:Play()
+        tweenStroke2.Completed:Wait()
+    end
+end)()
+
+---------------------------------------------------------------------
+-- OVERLAY (STATIC) GRADIENT
+---------------------------------------------------------------------
+-- An additional gradient layer for extra depth. This one remains static.
+local overlayGradient = Instance.new("UIGradient")
+overlayGradient.Name = "OverlayGradient"
+overlayGradient.Rotation = 90
+overlayGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 10)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 }
+overlayGradient.Parent = mainFrame
+
 
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
+-----------------------------------------------------------
+-- TITLEBAR SETUP
+-----------------------------------------------------------
+-- SERVICES
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-----------------------------------------------------------
+-- TITLEBAR SETUP
+-----------------------------------------------------------
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
-titleBar.Parent = mainFrame
+titleBar.Parent = mainFrame  -- Ensure mainFrame is defined.
 titleBar.Size = UDim2.new(1, 0, 0, 50)
 titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 titleBar.BorderSizePixel = 0
 titleBar.Active = true
 titleBar.Selectable = true
 
+-----------------------------------------------------------
+-- DRAGGABILITY (Your Existing Code)
+-----------------------------------------------------------
+local dragging = false
+local dragInput, dragStart, startPos
+local targetPos = mainFrame.Position
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		targetPos = startPos
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if dragging then
+		mainFrame.Position = mainFrame.Position:Lerp(targetPos, 0.2)
+	end
+end)
+
+-----------------------------------------------------------
+-- TITLEBAR VISUAL EFFECTS
+-----------------------------------------------------------
+-- Rounded corners on the titleBar.
 local titleBarCorner = Instance.new("UICorner", titleBar)
 titleBarCorner.CornerRadius = UDim.new(0, 16)
 
+-- Background gradient for the titleBar.
 local titleGradient = Instance.new("UIGradient", titleBar)
 titleGradient.Rotation = 90
 titleGradient.Color = ColorSequence.new{
@@ -1065,6 +1238,9 @@ titleGradient.Color = ColorSequence.new{
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
 }
 
+-----------------------------------------------------------
+-- ACCENT LINE EFFECT
+-----------------------------------------------------------
 local accentLine = Instance.new("Frame")
 accentLine.Name = "AccentLine"
 accentLine.Parent = titleBar
@@ -1074,17 +1250,17 @@ accentLine.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 accentLine.BackgroundTransparency = 0
 accentLine.BorderSizePixel = 0
 
+-- Pulsing color animation.
 local accentColorTween = TweenService:Create(accentLine, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundColor3 = Color3.fromRGB(0, 200, 255)})
 accentColorTween:Play()
 
+-- Pulsing transparency animation.
 local accentTransparencyTween = TweenService:Create(accentLine, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.15})
 accentTransparencyTween:Play()
 
-
-local TweenService = game:GetService("TweenService")
-
-local TweenService = game:GetService("TweenService")
-
+-----------------------------------------------------------
+-- TITLE TEXT SETUP
+-----------------------------------------------------------
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Parent = titleBar
@@ -1092,24 +1268,39 @@ titleText.Size = UDim2.new(1, -120, 1, 0)
 titleText.Position = UDim2.new(0, 20, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "CometWare"
--- Changed font to GothamBold for a bolder look.
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 28
 titleText.TextStrokeTransparency = 0.7
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.TextColor3 = Color3.fromRGB(240, 240, 240)
 
--- Create a gradient that animates within the text (i.e. the shine effect happens inside the letters)
+-- Drop shadow behind the title text for extra depth.
+local titleShadow = Instance.new("TextLabel")
+titleShadow.Name = "TitleShadow"
+titleShadow.Parent = titleBar
+titleShadow.Size = titleText.Size
+titleShadow.Position = titleText.Position + UDim2.new(0, 2, 0, 2)
+titleShadow.BackgroundTransparency = 1
+titleShadow.Text = titleText.Text
+titleShadow.Font = titleText.Font
+titleShadow.TextSize = titleText.TextSize
+titleShadow.TextStrokeTransparency = titleText.TextStrokeTransparency
+titleShadow.TextXAlignment = titleText.TextXAlignment
+titleShadow.TextColor3 = Color3.new(0, 0, 0)
+titleShadow.ZIndex = titleText.ZIndex - 1
+
+-----------------------------------------------------------
+-- TITLE TEXT SHINE EFFECT
+-----------------------------------------------------------
 local textGradient = Instance.new("UIGradient", titleText)
 textGradient.Rotation = 0
 textGradient.Color = ColorSequence.new{
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 240, 240))
 }
--- Start with a slight offset so the "shine" starts off inside the text
 textGradient.Offset = Vector2.new(-0.2, 0)
 
--- Animate the gradient's offset so the shine flows through the text
+-- Animate the gradient's offset for a flowing shine effect.
 coroutine.wrap(function()
 	while true do
 		local tween1 = TweenService:Create(textGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(1, 0)})
@@ -1120,6 +1311,25 @@ coroutine.wrap(function()
 		tween2.Completed:Wait()
 	end
 end)()
+
+-----------------------------------------------------------
+-- ADDITIONAL HOVER & INTERACTION EFFECTS
+-----------------------------------------------------------
+-- TitleBar hover effect: a subtle lightening.
+titleBar.MouseEnter:Connect(function()
+	TweenService:Create(titleBar, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
+end)
+titleBar.MouseLeave:Connect(function()
+	TweenService:Create(titleBar, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}):Play()
+end)
+
+-- TitleText hover pulse: slightly brighten the text and reduce stroke transparency.
+titleText.MouseEnter:Connect(function()
+	TweenService:Create(titleText, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextStrokeTransparency = 0.5, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+titleText.MouseLeave:Connect(function()
+	TweenService:Create(titleText, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextStrokeTransparency = 0.7, TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+end)
 
 
 
@@ -1202,23 +1412,30 @@ end)
 local TweenService = game:GetService("TweenService")
 local StarterGui = game:GetService("StarterGui")
 
+-- Assume these variables are defined:
+-- titleBar  : the parent frame for title bar UI elements.
+-- mainFrame : your main UI container frame.
+-- screenGui : the top-level ScreenGui containing your UI.
+
+-- Create the Close Button.
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = titleBar
--- Changed position: shifted 20 pixels further left from the edge.
-closeButton.Position = UDim2.new(1, -50, 0, 10)
+closeButton.Position = UDim2.new(1, -50, 0, 10)  -- shifted 20 pixels further left from the edge
 closeButton.Size = UDim2.new(0, 30, 0, 30)
 closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 closeButton.Text = "X"
 closeButton.Font = Enum.Font.GothamSemibold
 closeButton.TextSize = 20
 closeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+
 local closeCorner = Instance.new("UICorner", closeButton)
 closeCorner.CornerRadius = UDim.new(0, 5)
 
 local closeScale = Instance.new("UIScale", closeButton)
 closeScale.Scale = 1
 
+-- MouseEnter/Leave animations.
 closeButton.MouseEnter:Connect(function()
 	TweenService:Create(closeScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
 	TweenService:Create(closeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(240, 80, 80)}):Play()
@@ -1229,6 +1446,7 @@ closeButton.MouseLeave:Connect(function()
 	TweenService:Create(closeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(220, 60, 60)}):Play()
 end)
 
+-- Ripple effect on MouseButton1Down.
 closeButton.MouseButton1Down:Connect(function()
 	local ripple = Instance.new("Frame")
 	ripple.Size = UDim2.new(0, 0, 0, 0)
@@ -1239,17 +1457,178 @@ closeButton.MouseButton1Down:Connect(function()
 	ripple.Parent = closeButton
 	local rippleCorner = Instance.new("UICorner", ripple)
 	rippleCorner.CornerRadius = UDim.new(1, 0)
-	TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}):Play()
-	task.delay(0.3, function() ripple:Destroy() end)
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-	local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)})
-	closeTween:Play()
-	closeTween.Completed:Connect(function() 
-		screenGui:Destroy() 
+	TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = UDim2.new(2, 0, 2, 0), 
+		BackgroundTransparency = 1
+	}):Play()
+	task.delay(0.3, function()
+		if ripple and ripple.Parent then
+			ripple:Destroy()
+		end
 	end)
 end)
+
+-- Prevent multiple close triggers.
+local isClosing = false
+
+closeButton.MouseButton1Click:Connect(function()
+	if isClosing then return end
+	isClosing = true
+	
+	-- Set a global flag to indicate that the UI is closed.
+	_G.UIClosed = true
+	
+	-- Fade out animation on mainFrame (keep your beloved animation intact).
+	local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0, 0, 0, 0)
+	})
+	closeTween:Play()
+	
+	closeTween.Completed:Connect(function()
+		-- Optionally, you can perform any additional cleanup here.
+		-- Destroy the ScreenGui to fully kill the UI and stop any further code from running.
+		if screenGui and screenGui.Parent then
+			screenGui:Destroy()
+		end
+	end)
+end)
+
+-- Step 1: Create the Theme Button in the titleBar and define all necessary functions
+
+local TweenService = game:GetService("TweenService")
+
+-- Define the toggleThemePanel function inline.
+-- This function toggles the visibility of 'themePanel' (which should be defined in Step 2).
+local function toggleThemePanel()
+    if themePanel then
+        themePanel.Visible = not themePanel.Visible
+        print("Theme panel toggled to", themePanel.Visible and "visible" or "hidden")
+    else
+        warn("toggleThemePanel: themePanel is not defined!")
+    end
+end
+
+-- Create the theme button
+local themeButton = Instance.new("TextButton")
+themeButton.Name = "ThemeButton"
+themeButton.Parent = titleBar  -- Assumes 'titleBar' is already defined in your UI
+themeButton.Size = UDim2.new(0, 30, 0, 30)
+-- Position it to the left of the minimize button.
+-- For example, if the minimize button is at UDim2.new(1, -85, 0, 10), then this button is placed at UDim2.new(1, -120, 0, 10)
+themeButton.Position = UDim2.new(1, -120, 0, 10)
+-- Do not change the default AnchorPoint (so it remains (0, 0)) to preserve its placement.
+themeButton.BackgroundColor3 = Color3.fromRGB(128, 0, 128)  -- Purple background
+themeButton.BorderSizePixel = 0
+themeButton.Text = "✨"  -- Using the emoji without asterisks
+themeButton.Font = Enum.Font.GothamBold
+themeButton.TextSize = 20
+themeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+themeButton.AutoButtonColor = false  -- We'll handle hover effects manually
+
+-- Add rounded corners for a polished look.
+local themeCorner = Instance.new("UICorner", themeButton)
+themeCorner.CornerRadius = UDim.new(0, 8)
+
+-- Add a UIScale for smooth hover scaling.
+local themeScale = Instance.new("UIScale", themeButton)
+themeScale.Scale = 1
+
+-- Set up hover animations using TweenService.
+themeButton.MouseEnter:Connect(function()
+    TweenService:Create(themeScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.1}):Play()
+    TweenService:Create(themeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+        {BackgroundColor3 = Color3.fromRGB(150, 0, 150)}):Play()
+end)
+
+themeButton.MouseLeave:Connect(function()
+    TweenService:Create(themeScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+    TweenService:Create(themeButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+        {BackgroundColor3 = Color3.fromRGB(128, 0, 128)}):Play()
+end)
+
+-- Add clicking animations (ripple effect and scale change) similar to your minimize button.
+themeButton.MouseButton1Down:Connect(function()
+    TweenService:Create(themeScale, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.9}):Play()
+    local ripple = Instance.new("Frame")
+    ripple.Name = "Ripple"
+    ripple.Parent = themeButton
+    ripple.Size = UDim2.new(0, 0, 0, 0)
+    ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+    ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ripple.BackgroundTransparency = 0.3
+    local rippleCorner = Instance.new("UICorner", ripple)
+    rippleCorner.CornerRadius = UDim.new(1, 0)
+    TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+        {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}):Play()
+    task.delay(0.3, function() 
+        if ripple then 
+            ripple:Destroy() 
+        end
+    end)
+end)
+
+themeButton.MouseButton1Up:Connect(function()
+    TweenService:Create(themeScale, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.1}):Play()
+end)
+
+-- When the theme button is clicked, call toggleThemePanel.
+themeButton.MouseButton1Click:Connect(function()
+    toggleThemePanel()
+end)
+
+print("Theme button created in titleBar; toggleThemePanel function defined.")
+
+
+-----------------------------------------------
+-- Step 2: Create the Dropdown Panel for Themes
+-----------------------------------------------
+
+-- Ensure 'screenGui' is defined from mainFrame's parent.
+local screenGui = mainFrame.Parent
+if not screenGui or not screenGui:IsA("ScreenGui") then
+    error("mainFrame's parent is not a ScreenGui!")
+end
+
+-- Create the theme panel
+local themePanel = Instance.new("Frame")
+themePanel.Name = "ThemePanel"
+themePanel.Parent = screenGui  -- Parent the panel to the ScreenGui for global overlay
+-- Adjust the position as desired; here we place it toward the top-right of the screen.
+themePanel.Position = UDim2.new(0.75, 0, 0.15, 0)
+themePanel.Size = UDim2.new(0, 220, 0, 180)
+themePanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+themePanel.BorderSizePixel = 0
+themePanel.Visible = false  -- Start hidden
+
+-- Add UIPadding for internal margins
+local panelPadding = Instance.new("UIPadding", themePanel)
+panelPadding.PaddingTop = UDim.new(0, 10)
+panelPadding.PaddingBottom = UDim.new(0, 10)
+panelPadding.PaddingLeft = UDim.new(0, 10)
+panelPadding.PaddingRight = UDim.new(0, 10)
+
+-- Add a UIListLayout for vertical alignment of options
+local panelLayout = Instance.new("UIListLayout", themePanel)
+panelLayout.SortOrder = Enum.SortOrder.LayoutOrder
+panelLayout.Padding = UDim.new(0, 8)
+
+-- Create a title label for the panel
+local panelTitle = Instance.new("TextLabel")
+panelTitle.Name = "PanelTitle"
+panelTitle.Parent = themePanel
+panelTitle.Size = UDim2.new(1, 0, 0, 25)
+panelTitle.BackgroundTransparency = 1
+panelTitle.Text = "Select Theme"
+panelTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+panelTitle.Font = Enum.Font.GothamBold
+panelTitle.TextSize = 20
+panelTitle.LayoutOrder = 1
+
+-- Debug print to confirm the panel has been created
+print("Theme Panel created. It is currently hidden.")
+
 
 
 local tabButtonsFrame = Instance.new("Frame")
@@ -1271,45 +1650,18 @@ local contentLayout = Instance.new("UIListLayout", tabContentFrame)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 contentLayout.Padding = UDim.new(0, 0)
 
+-- SERVICES
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
-local dragging = false
-local dragInput, dragStart, startPos
-local targetPos = mainFrame.Position
-titleBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = mainFrame.Position
-		targetPos = startPos
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
-titleBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
-UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		local delta = input.Position - dragStart
-		targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-RunService.RenderStepped:Connect(function()
-	if dragging then
-		mainFrame.Position = mainFrame.Position:Lerp(targetPos, 0.2)
-	end
-end)
 
 local windowAPI = {}
 windowAPI.TabButtonsFrame = tabButtonsFrame
 windowAPI.TabContentFrame = tabContentFrame
 windowAPI.Tabs = {}
 windowAPI.ActiveTab = nil
+
+
 
 -- Tabs
 local TweenService = game:GetService("TweenService")
@@ -1480,7 +1832,7 @@ function tab:AddSection(sectionName)
 
 	local sectionLayout = Instance.new("UIListLayout", sectionFrame)
 	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	sectionLayout.Padding = UDim.new(0, 5)
+	sectionLayout.Padding = UDim.new(0, 10)
 
 	section.Frame = sectionFrame
 
@@ -1610,64 +1962,150 @@ end
 --------------------------------------------------
 -- Fade In and Show Function
 --------------------------------------------------
-local function fadeInAndShow(ui, duration)
-	duration = duration or 0.35
-	ui.Visible = true
-	
-	-- Optionally, apply a cascade delay based on the descendant's order for a polished effect.
-	local delayIncrement = 0.01
-	local currentDelay = 0
-	
-	-- Iterate through all GUI descendants to restore their original transparency properties.
-	for _, descendant in ipairs(ui:GetDescendants()) do
-		if descendant:IsA("GuiObject") then
-			-- Restore BackgroundTransparency
-			local origBg = descendant:GetAttribute("origBackgroundTransparency")
-			if origBg == nil then
-				origBg = 0
-				descendant:SetAttribute("origBackgroundTransparency", origBg)
-			end
-			TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
-				{BackgroundTransparency = origBg}):Play()
-			
-			-- Restore TextTransparency for text-based elements
-			if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
-				local origText = descendant:GetAttribute("origTextTransparency")
-				if origText == nil then
-					origText = 0
-					descendant:SetAttribute("origTextTransparency", origText)
-				end
-				TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
-					{TextTransparency = origText}):Play()
-			end
+--[[
+    Polished FadeInAndShow Function
+    --------------------------------
+    This function is designed to fade in a UI element and all of its descendant GuiObjects
+    with a smooth, cascading ripple effect. It works by:
 
-			-- Restore ImageTransparency for image-based elements
-			if descendant:IsA("ImageLabel") or descendant:IsA("ImageButton") then
-				local origImage = descendant:GetAttribute("origImageTransparency")
-				if origImage == nil then
-					origImage = 0
-					descendant:SetAttribute("origImageTransparency", origImage)
-				end
-				TweenService:Create(descendant, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
-					{ImageTransparency = origImage}):Play()
-			end
+      1. Ensuring the top-level UI is visible.
+      2. Recursively initializing every descendant’s transparency to 1 (i.e. fully invisible).
+      3. Recursively tweening each descendant's transparency properties back to 0 (i.e. fully visible)
+         with a slight per-element delay, creating a cascading effect.
+      
+    Customization Options:
+      - duration: Overall tween duration for each element (default is 0.35 seconds).
+      - options (table):
+          • CascadeDelay: Additional delay (in seconds) per descendant (default is 0.01).
+          • EasingStyle: The easing style for the tweens (default is Enum.EasingStyle.Sine).
+          • EasingDirection: The easing direction for the tweens (default is Enum.EasingDirection.Out).
 
-			-- If the descendant has any UIStroke objects, restore their transparency as well
-			for _, child in ipairs(descendant:GetChildren()) do
-				if child:IsA("UIStroke") then
-					local origStroke = child:GetAttribute("origStrokeTransparency")
-					if origStroke == nil then
-						origStroke = child.Transparency or 0
-						child:SetAttribute("origStrokeTransparency", origStroke)
-					end
-					TweenService:Create(child, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, currentDelay), 
-						{Transparency = origStroke}):Play()
-				end
-			end
-			
-			currentDelay = currentDelay + delayIncrement
-		end
-	end
+    Usage Example:
+      local fadeInAndShow = require(path.to.thisModule)  -- if using as a module
+      fadeInAndShow(myUI, 0.5, {
+          CascadeDelay = 0.015,
+          EasingStyle = Enum.EasingStyle.Quad,
+          EasingDirection = Enum.EasingDirection.Out,
+      })
+]]--
+
+
+local TweenService = game:GetService("TweenService")
+
+local function fadeInAndShow(ui, duration, options)
+    duration = duration or 0.35
+    options = options or {}
+    local cascadeDelay = options.CascadeDelay or 0.01
+    local easingStyle = options.EasingStyle or Enum.EasingStyle.Sine
+    local easingDirection = options.EasingDirection or Enum.EasingDirection.Out
+
+    -- Make sure the UI is visible.
+    ui.Visible = true
+
+    -------------------------------------------------------------
+    -- Step 1: Cache original transparencies and initialize them.
+    -- For each GuiObject, we store its current transparency (if not already stored)
+    -- in an attribute, then set the transparency to 1 (fully invisible) to prepare
+    -- for a smooth fade-in.
+    -------------------------------------------------------------
+    local function cacheAndInitialize(object)
+        if object:IsA("GuiObject") then
+            -- BackgroundTransparency
+            if object.BackgroundTransparency ~= nil then
+                if object:GetAttribute("origBackgroundTransparency") == nil then
+                    object:SetAttribute("origBackgroundTransparency", object.BackgroundTransparency)
+                end
+                object.BackgroundTransparency = 1
+            end
+
+            -- TextTransparency for text elements.
+            if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
+                if object:GetAttribute("origTextTransparency") == nil then
+                    object:SetAttribute("origTextTransparency", object.TextTransparency)
+                end
+                object.TextTransparency = 1
+            end
+
+            -- ImageTransparency for image elements.
+            if object:IsA("ImageLabel") or object:IsA("ImageButton") then
+                if object:GetAttribute("origImageTransparency") == nil then
+                    object:SetAttribute("origImageTransparency", object.ImageTransparency)
+                end
+                object.ImageTransparency = 1
+            end
+
+            -- For any UIStroke children, do the same.
+            for _, child in ipairs(object:GetChildren()) do
+                if child:IsA("UIStroke") then
+                    if child:GetAttribute("origStrokeTransparency") == nil then
+                        child:SetAttribute("origStrokeTransparency", child.Transparency)
+                    end
+                    child.Transparency = 1
+                end
+            end
+        end
+
+        -- Recursively process all children.
+        for _, descendant in ipairs(object:GetChildren()) do
+            cacheAndInitialize(descendant)
+        end
+    end
+
+    cacheAndInitialize(ui)
+
+    -------------------------------------------------------------
+    -- Step 2: Tween all transparency properties back to their original values.
+    -- A cascading delay is applied so that the fade-in appears as a smooth ripple.
+    -------------------------------------------------------------
+    local function tweenIn(object, delayOffset)
+        delayOffset = delayOffset or 0
+
+        if object:IsA("GuiObject") then
+            local tweenInfo = TweenInfo.new(
+                duration,
+                easingStyle,
+                easingDirection,
+                0,          -- no repeats
+                false,      -- do not reverse
+                delayOffset -- cascade delay for this element
+            )
+            local tweenProps = {}
+
+            if object.BackgroundTransparency ~= nil then
+                tweenProps.BackgroundTransparency = object:GetAttribute("origBackgroundTransparency") or 0
+            end
+
+            if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
+                tweenProps.TextTransparency = object:GetAttribute("origTextTransparency") or 0
+            end
+
+            if object:IsA("ImageLabel") or object:IsA("ImageButton") then
+                tweenProps.ImageTransparency = object:GetAttribute("origImageTransparency") or 0
+            end
+
+            if next(tweenProps) then
+                local tween = TweenService:Create(object, tweenInfo, tweenProps)
+                tween:Play()
+            end
+
+            -- Tween any UIStroke children.
+            for _, child in ipairs(object:GetChildren()) do
+                if child:IsA("UIStroke") then
+                    local strokeTween = TweenService:Create(child, tweenInfo, {
+                        Transparency = child:GetAttribute("origStrokeTransparency") or 0
+                    })
+                    strokeTween:Play()
+                end
+            end
+        end
+
+        -- Recursively process all children with an increased delay.
+        for _, child in ipairs(object:GetChildren()) do
+            tweenIn(child, delayOffset + cascadeDelay)
+        end
+    end
+
+    tweenIn(ui, 0)
 end
 
 
@@ -2099,5 +2537,3 @@ end)
 print("Chosen color:", chosenColor)
      -- Additional functionality goes here.
  end)
-
-

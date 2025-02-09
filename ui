@@ -1,148 +1,108 @@
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local StarterGui = game:GetService("StarterGui")
 
--- Create the loading ScreenGui
 local loadingGui = Instance.new("ScreenGui")
 loadingGui.Name = "CometLoadingGui"
 loadingGui.Parent = game.CoreGui
 loadingGui.IgnoreGuiInset = true
 
--- Background with smooth gradient animation
-local bg = Instance.new("Frame")
-bg.Name = "Background"
-bg.Parent = loadingGui
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-bg.BackgroundTransparency = 0.3
-local bgGradient = Instance.new("UIGradient", bg)
-bgGradient.Rotation = 90
-bgGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-})
-
--- Loading frame centered on the screen
-local loadingFrame = Instance.new("Frame")
-loadingFrame.Name = "LoadingFrame"
-loadingFrame.Parent = loadingGui
-loadingFrame.Size = UDim2.new(0, 400, 0, 150)
-loadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-loadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-loadingFrame.BackgroundTransparency = 1
-
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local startTime = tick()
+local container = Instance.new("Frame")
+container.Name = "Container"
+container.Parent = loadingGui
+container.AnchorPoint = Vector2.new(0.5, 0.5)
+container.Position = UDim2.new(0.5, 0, 0.5, 0)
+container.Size = UDim2.new(0, 0, 0, 0)
+container.BackgroundTransparency = 1
 
 local cometLabel = Instance.new("TextLabel")
 cometLabel.Name = "CometLabel"
-cometLabel.Parent = loadingFrame
-cometLabel.Size = UDim2.new(1, 0, 1, 0)
+cometLabel.Parent = container
+cometLabel.Size = UDim2.new(1, 0, 0, 140)
+cometLabel.Position = UDim2.new(0, 0, 0, 0)
 cometLabel.BackgroundTransparency = 1
 cometLabel.Text = "Comet"
-cometLabel.Font = Enum.Font.GothamBlack
-cometLabel.TextSize = 72
-cometLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-cometLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-cometLabel.TextStrokeTransparency = 0.5
+cometLabel.Font = Enum.Font.ArimoBold
+cometLabel.TextSize = 144
+cometLabel.TextColor3 = Color3.fromRGB(240,240,240)
+cometLabel.TextStrokeColor3 = Color3.new(0,0,0)
+cometLabel.TextStrokeTransparency = 0.3
+cometLabel.TextTransparency = 1
 cometLabel.ZIndex = 2
 
-local textGradient = Instance.new("UIGradient", cometLabel)
-textGradient.Rotation = 0
-textGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,150,255)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240,240,240)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,150,255))
+local cometGradient = Instance.new("UIGradient", cometLabel)
+cometGradient.Rotation = 0
+cometGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,122,255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))
 })
--- Start the gradient offset to the left
-textGradient.Offset = Vector2.new(-0.2, 0)
+cometGradient.Offset = Vector2.new(-1, 0)
 
--- Use RenderStepped to continuously and smoothly animate the gradient and pulse the text size.
-RunService.RenderStepped:Connect(function()
+local executorName = identifyexecutor() or "Unknown Executor"
+local executorLabel = Instance.new("TextLabel")
+executorLabel.Name = "ExecutorLabel"
+executorLabel.Parent = container
+executorLabel.Size = UDim2.new(1, 0, 0, 60)
+executorLabel.Position = UDim2.new(0, 0, 0, 145)
+executorLabel.BackgroundTransparency = 1
+executorLabel.Text = executorName
+executorLabel.Font = Enum.Font.ArimoBold
+executorLabel.TextSize = 28
+executorLabel.TextColor3 = Color3.fromRGB(230,230,230)
+executorLabel.TextStrokeColor3 = Color3.new(0,0,0)
+executorLabel.TextStrokeTransparency = 0.3
+executorLabel.TextTransparency = 1
+executorLabel.ZIndex = 2
+
+local executorGradient = Instance.new("UIGradient", executorLabel)
+executorGradient.Rotation = 0
+executorGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,200,255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))
+})
+executorGradient.Offset = Vector2.new(-1, 0)
+
+local popInTween = TweenService:Create(container, TweenInfo.new(1, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0,500,0,220)})
+popInTween:Play()
+popInTween.Completed:Connect(function()
+	local fadeInComet = TweenService:Create(cometLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+	local fadeInExecutor = TweenService:Create(executorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+	fadeInComet:Play()
+	fadeInExecutor:Play()
+end)
+
+local startTime = tick()
+local renderConn = RunService.RenderStepped:Connect(function()
 	local t = tick() - startTime
-	
-	-- Animate gradient offset smoothly over a 6-second cycle.
-	-- Oscillates between -0.2 and 0.2.
-	local offsetX = -0.2 + 0.4 * ((math.sin(t * (2 * math.pi / 6)) + 1) / 2)
-	textGradient.Offset = Vector2.new(offsetX, 0)
-	
-	-- Pulse the text size smoothly over a 4-second cycle.
-	-- Oscillates between 72 and 80.
-	local newSize = 72 + 8 * ((math.sin(t * (2 * math.pi / 4)) + 1) / 2)
-	cometLabel.TextSize = newSize
+	local cometOff = math.sin(t * 2) * 1
+	cometGradient.Offset = Vector2.new(cometOff, 0)
+	cometLabel.TextSize = 144 + 8 * math.sin(t * 3)
+	local execOff = math.cos(t * 2.5) * 1
+	executorGradient.Offset = Vector2.new(execOff, 0)
+	local bob = math.sin(t * 2) * 4
+	executorLabel.Position = UDim2.new(0, 0, 0, 100 + bob)
+	local containerRot = math.sin(t) * 2
+	container.Rotation = containerRot
 end)
 
-
--- Function to spawn a custom-made comet (a Frame with gradient transparency)
-local function spawnComet()
-	local comet = Instance.new("Frame")
-	comet.Name = "FlyingComet"
-	comet.Size = UDim2.new(0, 40, 0, 10)
-	comet.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	comet.BackgroundTransparency = 0
-	comet.BorderSizePixel = 0
-	comet.Parent = loadingFrame
-	comet.ZIndex = 1
-	local cometCorner = Instance.new("UICorner", comet)
-	cometCorner.CornerRadius = UDim.new(0, 5)
-	
-	local cometGradient = Instance.new("UIGradient", comet)
-	cometGradient.Rotation = 0
-	cometGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-	})
-	cometGradient.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0),
-		NumberSequenceKeypoint.new(1, 1)
-	})
-	
-	local startX = -50
-	local endX = 450
-	local yPos = 75 + math.random(-15,15)
-	comet.Position = UDim2.new(0, startX, 0, yPos)
-	
-	local cometTween = TweenService:Create(comet, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position = UDim2.new(0, endX, 0, yPos),
-		BackgroundTransparency = 1
-	})
-	cometTween:Play()
-	cometTween.Completed:Connect(function() comet:Destroy() end)
-end
-
--- Continuously spawn comets at random intervals
-spawn(function()
-	while true do
-		spawnComet()
-		wait(math.random(0.5, 1))
-	end
-end)
-
--- Animate the background gradient offset for a dynamic feel
-coroutine.wrap(function()
-	while bgGradient do
-		local tween = TweenService:Create(bgGradient, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset = Vector2.new(math.random(-50,50), math.random(-50,50))})
-		tween:Play()
-		tween.Completed:Wait()
-		wait(2)
-	end
-end)()
-
--- After a delay, fade out the loading screen and destroy it
 wait(3)
-local fadeTween = TweenService:Create(loadingFrame, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
-fadeTween:Play()
-local fadeBgTween = TweenService:Create(bg, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
-fadeBgTween:Play()
-fadeBgTween.Completed:Wait()
 
-StarterGui:SetCore("SendNotification", {
-	Title = "Comet Loaded.",
-	Text = "Thanks for using Comet!",
-	Duration = 5
-})
-loadingGui:Destroy()
+local fadeOutTweenComet = TweenService:Create(cometLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
+local fadeOutTweenExecutor = TweenService:Create(executorLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
+fadeOutTweenComet:Play()
+	fadeOutTweenExecutor:Play()
+fadeOutTweenExecutor.Completed:Connect(function()
+	renderConn:Disconnect()
+	local shrinkTween = TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0), Rotation = 0})
+	shrinkTween:Play()
+	shrinkTween.Completed:Connect(function()
+		loadingGui:Destroy()
+	end)
+end)
+
+
+
 
 ---------------------------
 -- SERVICES & UTILITY FUNCTIONS
@@ -494,21 +454,41 @@ end
 	tooltip.ZIndex = handle.ZIndex + 1
 	tooltip.Parent = track
 
-	-- Smooth interpolation for fill & handle
-	local targetPercent = initPercent
-	local currentPercent = initPercent
-	local renderConn = game:GetService("RunService").RenderStepped:Connect(function()
-		if slider and slider.Parent then
-			currentPercent = currentPercent + (targetPercent - currentPercent) * 0.6
-			fill.Size = UDim2.new(currentPercent, 0, 1, 0)
-			handle.Position = UDim2.new(currentPercent, 0, 0.5, 0)
-			if tooltip.Visible then
-				tooltip.Position = UDim2.new(currentPercent, 0, 0, -25)
-			end
-		else
-			renderConn:Disconnect()
-		end
-	end)
+-- At the top of your module or script, declare renderConn in a persistent scope:
+local renderConn
+
+-- Before creating a new connection, disconnect any existing one.
+if renderConn and renderConn.Connected then
+    renderConn:Disconnect()
+    renderConn = nil
+end
+
+local RunService = game:GetService("RunService")
+
+-- Assume these variables are defined:
+-- initPercent, slider, fill, handle, tooltip
+
+local targetPercent = initPercent
+local currentPercent = initPercent
+
+renderConn = RunService.RenderStepped:Connect(function()
+    -- Check if 'slider' exists and has a parent.
+    if slider and slider.Parent then
+        currentPercent = currentPercent + (targetPercent - currentPercent) * 0.6
+        fill.Size = UDim2.new(currentPercent, 0, 1, 0)
+        handle.Position = UDim2.new(currentPercent, 0, 0.5, 0)
+        if tooltip and tooltip.Visible then
+            tooltip.Position = UDim2.new(currentPercent, 0, 0, -25)
+        end
+    else
+        -- If slider is missing, disconnect the RenderStepped connection safely.
+        if renderConn then
+            renderConn:Disconnect()
+            renderConn = nil
+        end
+    end
+end)
+
 
 	-- Dragging logic and updating value
 	local dragging = false
@@ -599,160 +579,245 @@ end
 --------------------------------------------------
 -- createToggle Function (Repositioned for Better Layout)
 --------------------------------------------------
-local function createToggle(parent, opts, callback)
-	opts = opts or {}
-	local labelText = opts.Label or "Toggle"
-	local defaultState = opts.Default or false
-
-	-- Outer Container: Fixed size for proper layout.
 local TweenService = game:GetService("TweenService")
 
-local container = Instance.new("Frame")
-container.Name = "ToggleContainer"
-container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
-container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-container.BackgroundTransparency = 0
-container.Parent = parent
+--[[
+    Advanced Toggle Creation Function
+    ===================================
+    This function creates a highly advanced toggle UI element with:
+      - A dark container with an animated pulsing stroke (mirroring the slider style)
+      - A refined gradient background and drop shadow for depth
+      - A label placed flush with the toggle track (minimized gap)
+      - An advanced toggle track with its own animated stroke and gradient
+      - A sliding toggle handle with subtle shadow effects
+      - Hover animations on the track (scaling and animated border changes)
+      - Toggle behavior that calls a callback with the new state
+    The function ends by declaring "local state = defaultState" so that external code
+    relying on that variable can run correctly.
+    
+    Usage:
+      local toggle, state = createToggle(parent, opts, callback)
+      
+    opts table keys:
+      - Label (string): text for the label (default: "Toggle")
+      - Default (boolean): initial toggle state (default: false)
+      - Size (UDim2): size of the container (default: UDim2.new(1, 0, 0, 40))
+      - Font, TextSize, TextColor, TextStrokeColor, TextStrokeTransparency: for the label.
+      
+    callback(newState) is called when the toggle is flipped.
+    
+    Enjoy the advanced toggle!
+    
+    (This function is intentionally long and advanced.)
+]]--
 
--- Rounded corners for a smooth, modern look.
-local containerCorner = Instance.new("UICorner", container)
-containerCorner.CornerRadius = UDim.new(0, 10)
+--[[
+  Advanced Toggle Creation Function
+  ===================================
+  This function creates a complex, highly polished toggle UI element.
+  It uses an animated pulsing stroke (like your slider), a refined gradient,
+  drop shadows, and a layout that places the label flush next to the toggle track.
+  
+  All toggle state change handling (click callbacks) is omitted so that your own
+  code may manage the toggle behavior. The function simply creates the UI element
+  and returns the container and the initial state.
 
--- A subtle stroke to define the container's edges.
-local containerStroke = Instance.new("UIStroke", container)
-containerStroke.Thickness = 2
-containerStroke.Color = Color3.fromRGB(80, 80, 80)
-containerStroke.Transparency = 0.2
+  At the very end, the code declares "local state = defaultState" so that external code 
+  relying on that variable can function properly.
+  
+  Usage:
+    local toggleContainer, state = createToggle(parent, opts)
+  
+  opts table keys:
+    - Label (string): text for the label (default: "Toggle")
+    - Default (boolean): initial toggle state (default: false)
+    - Size (UDim2): size of the outer container (default: UDim2.new(1, 0, 0, 40))
+    - Font, TextSize, TextColor, TextStrokeColor, TextStrokeTransparency: styling for the label.
+  
+  Enjoy your extremely advanced toggle!
+  
+  (This code does NOT automatically toggle the state on click – you may handle that externally.)
+]]--
 
--- A refined vertical gradient that gives depth.
-local containerGradient = Instance.new("UIGradient", container)
-containerGradient.Rotation = 90
-containerGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 35)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
-})
+local function createToggle(parent, opts)
+    opts = opts or {}
+    local labelText = opts.Label or "Toggle"
+    local defaultState = opts.Default or false
+    local TweenService = game:GetService("TweenService")
 
--- OPTIONAL: Subtle hover animation to highlight the container when the mouse is over it.
-container.MouseEnter:Connect(function()
-	TweenService:Create(containerStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Color = Color3.fromRGB(0, 150, 255)}):Play()
-end)
-container.MouseLeave:Connect(function()
-	TweenService:Create(containerStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
-end)
+    --------------------------------------------------------------------------
+    -- 1. Outer Container Setup
+    --------------------------------------------------------------------------
+    local container = Instance.new("Frame")
+    container.Name = "ToggleContainer"
+    container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
+    container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    container.BackgroundTransparency = 0
+    container.Parent = parent
 
+    --------------------------------------------------------------------------
+    -- 2. Animated Stroke (Mirroring the Slider’s Effect)
+    --------------------------------------------------------------------------
+    local containerStroke = Instance.new("UIStroke", container)
+    containerStroke.Thickness = 2
+    containerStroke.Color = Color3.fromRGB(100, 100, 100)  -- initial color
+    containerStroke.Transparency = 0.2
 
-	-- Drop Shadow for depth.
-	local shadow = Instance.new("Frame")
-	shadow.Name = "ToggleShadow"
-	shadow.Size = container.Size
-	shadow.Position = UDim2.new(0, 4, 0, 4)
-	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-	shadow.BackgroundTransparency = 0.5
-	shadow.BorderSizePixel = 0
-	shadow.ZIndex = container.ZIndex - 1
-	shadow.Parent = container
+    local strokeColorTween = TweenService:Create(
+        containerStroke,
+        TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        { Color = Color3.fromRGB(0, 200, 255) }
+    )
+    strokeColorTween:Play()
 
-	-- Border using UIStroke.
-	local containerStroke = Instance.new("UIStroke")
-	containerStroke.Parent = container
-	containerStroke.Thickness = 2
-	containerStroke.Color = Color3.fromRGB(100, 100, 100)
-	containerStroke.Transparency = 0.3
+    local strokeTransparencyTween = TweenService:Create(
+        containerStroke,
+        TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        { Transparency = 0.15 }
+    )
+    strokeTransparencyTween:Play()
 
-	-- Rounded corners for container.
-	local containerCorner = Instance.new("UICorner", container)
-	containerCorner.CornerRadius = UDim.new(0, 10)
+    --------------------------------------------------------------------------
+    -- 3. Rounded Corners & Gradient Background
+    --------------------------------------------------------------------------
+    local containerCorner = Instance.new("UICorner", container)
+    containerCorner.CornerRadius = UDim.new(0, 10)
 
-	-- Manually position the label and toggle track.
-	-- Label: occupies most of the container on the left.
-	local label = Instance.new("TextLabel")
-	label.Name = "ToggleLabel"
-	label.BackgroundTransparency = 1
-	label.Text = labelText
-	label.Font = opts.Font or Enum.Font.GothamBold
-	label.TextSize = opts.TextSize or 20
-	label.TextColor3 = opts.TextColor or Color3.fromRGB(240, 240, 240)
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	-- Leave space on the right (about 80 pixels) for the toggle track.
-	label.Size = UDim2.new(1, -80, 1, 0)
-	label.Position = UDim2.new(0, 10, 0, 0)
-	label.TextStrokeColor3 = opts.TextStrokeColor or Color3.new(0, 0, 0)
-	label.TextStrokeTransparency = opts.TextStrokeTransparency or 0.8
-	label.Parent = container
+    local containerGradient = Instance.new("UIGradient", container)
+    containerGradient.Rotation = 90
+    containerGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+    })
 
-	-- Toggle track: fixed size on the right.
-	local track = Instance.new("Frame")
-	track.Name = "ToggleTrack"
-	track.Size = UDim2.new(0, 60, 0, 30)
-	track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	track.BorderSizePixel = 0
-	track.Parent = container
-	-- Position the track so that it is vertically centered with a margin from the right.
-	track.Position = UDim2.new(1, -70, 0.5, -15)
+    --------------------------------------------------------------------------
+    -- 4. Drop Shadow for Depth
+    --------------------------------------------------------------------------
+    local shadow = Instance.new("Frame")
+    shadow.Name = "ToggleShadow"
+    shadow.Size = container.Size
+    shadow.Position = UDim2.new(0, 4, 0, 4)
+    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+    shadow.BackgroundTransparency = 0.5
+    shadow.BorderSizePixel = 0
+    shadow.ZIndex = container.ZIndex - 1
+    shadow.Parent = container
 
-	-- Rounded corners on the track.
-	local trackCorner = Instance.new("UICorner", track)
-	trackCorner.CornerRadius = UDim.new(0, 15)
+    --------------------------------------------------------------------------
+    -- 5. Label: Positioned on the Left, Immediately Adjacent to Toggle Track
+    --------------------------------------------------------------------------
+    local label = Instance.new("TextLabel")
+    label.Name = "ToggleLabel"
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.Font = opts.Font or Enum.Font.GothamBold
+    label.TextSize = opts.TextSize or 20
+    label.TextColor3 = opts.TextColor or Color3.fromRGB(240, 240, 240)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextStrokeColor3 = opts.TextStrokeColor or Color3.new(0, 0, 0)
+    label.TextStrokeTransparency = opts.TextStrokeTransparency or 0.8
+    -- Reserve only a small gap for the toggle track. Adjust this value as needed.
+    local gap = 65  -- This is the total width reserved on the right for the toggle track.
+    label.Size = UDim2.new(1, -gap, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Parent = container
 
-	-- Subtle gradient on the track.
-	local trackGradient = Instance.new("UIGradient", track)
-	trackGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-	})
-	trackGradient.Rotation = 90
+    --------------------------------------------------------------------------
+    -- 6. Toggle Track: Immediately Next to the Label
+    --------------------------------------------------------------------------
+    local track = Instance.new("Frame")
+    track.Name = "ToggleTrack"
+    track.Size = UDim2.new(0, 60, 0, 30)
+    track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    track.BorderSizePixel = 0
+    track.Parent = container
+    -- Position the track so that it appears at the right edge of the container (with reserved gap)
+    track.Position = UDim2.new(1, -70, 0.5, -15)
 
-	-- Animated border (stroke) around the track.
-	local borderStroke = Instance.new("UIStroke", track)
-	borderStroke.Color = Color3.fromRGB(100, 100, 100)
-	borderStroke.Thickness = 2
-	borderStroke.Transparency = 0.5
+    local trackCorner = Instance.new("UICorner", track)
+    trackCorner.CornerRadius = UDim.new(0, 15)
 
-	-- UIScale for subtle hover effect on the track.
-	local trackScale = Instance.new("UIScale", track)
-	trackScale.Scale = 1
+    local trackGradient = Instance.new("UIGradient", track)
+    trackGradient.Rotation = 90
+    trackGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
+    })
 
-	-- Glow frame for visual flair when toggled on.
-	local glow = Instance.new("Frame")
-	glow.Name = "ToggleGlow"
-	glow.Size = UDim2.new(1, 6, 1, 6)
-	glow.Position = UDim2.new(0, -3, 0, -3)
-	glow.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-	glow.BackgroundTransparency = 1  -- initially hidden
-	glow.Parent = track
-	local glowCorner = Instance.new("UICorner", glow)
-	glowCorner.CornerRadius = UDim.new(0, 15)
+    --------------------------------------------------------------------------
+    -- 7. Animated Border on Track (Matching the Slider)
+    --------------------------------------------------------------------------
+    local borderStroke = Instance.new("UIStroke", track)
+    borderStroke.Color = Color3.fromRGB(100, 100, 100)
+    borderStroke.Thickness = 2
+    borderStroke.Transparency = 0.5
 
-	-- Toggle handle (the sliding indicator)
-	local handle = Instance.new("Frame")
-	handle.Name = "ToggleHandle"
-	handle.Size = UDim2.new(0, 26, 0, 26)
-	-- Set handle color depending on state.
-	handle.BackgroundColor3 = defaultState and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
-	handle.BorderSizePixel = 0
-	handle.Parent = track
-	local handleCorner = Instance.new("UICorner", handle)
-	handleCorner.CornerRadius = UDim.new(1, 0)
+    --------------------------------------------------------------------------
+    -- 8. (Optional) UIScale for Track Hover Effects
+    --------------------------------------------------------------------------
+    local trackScale = Instance.new("UIScale", track)
+    trackScale.Scale = 1
 
-	-- Optional: Add a subtle shadow for the handle.
-	local handleShadow = Instance.new("ImageLabel")
-	handleShadow.Name = "HandleShadow"
-	handleShadow.Size = handle.Size
-	handleShadow.Position = UDim2.new(0, 2, 0, 2)
-	handleShadow.BackgroundTransparency = 1
-	handleShadow.Image = "rbxassetid://131604521"  -- change to your desired asset ID
-	handleShadow.ImageColor3 = Color3.new(0, 0, 0)
-	handleShadow.ImageTransparency = 0.5
-	handleShadow.Parent = handle
-	handleShadow.ZIndex = handle.ZIndex - 1
+    track.MouseEnter:Connect(function()
+        TweenService:Create(trackScale, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1.03}):Play()
+        TweenService:Create(borderStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Thickness = 2.5, Transparency = 0.4}):Play()
+    end)
+    track.MouseLeave:Connect(function()
+        TweenService:Create(trackScale, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        TweenService:Create(borderStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Thickness = 2, Transparency = 0.5}):Play()
+    end)
 
-	-- Define positions for off and on states.
-	local offPosition = UDim2.new(0, 2, 0.5, -13)
-	local onPosition  = UDim2.new(1, -28, 0.5, -13)
-	handle.Position = defaultState and onPosition or offPosition
+    --------------------------------------------------------------------------
+    -- 9. Glow Frame: For Visual Flair (Optional)
+    --------------------------------------------------------------------------
+    local glow = Instance.new("Frame")
+    glow.Name = "ToggleGlow"
+    glow.Size = UDim2.new(1, 6, 1, 6)
+    glow.Position = UDim2.new(0, -3, 0, -3)
+    glow.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+    glow.BackgroundTransparency = 1  -- Initially hidden
+    glow.Parent = track
+    local glowCorner = Instance.new("UICorner", glow)
+    glowCorner.CornerRadius = UDim.new(0, 15)
 
-	-- Current state of the toggle.
-	local state = defaultState
+    --------------------------------------------------------------------------
+    -- 10. Toggle Handle: The Sliding Indicator
+    --------------------------------------------------------------------------
+    local handle = Instance.new("Frame")
+    handle.Name = "ToggleHandle"
+    handle.Size = UDim2.new(0, 26, 0, 26)
+    handle.BackgroundColor3 = defaultState and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+    handle.BorderSizePixel = 0
+    handle.Parent = track
+    local handleCorner = Instance.new("UICorner", handle)
+    handleCorner.CornerRadius = UDim.new(1, 0)
+
+    --------------------------------------------------------------------------
+    -- 11. Handle Shadow: For Extra Depth
+    --------------------------------------------------------------------------
+    local handleShadow = Instance.new("ImageLabel")
+    handleShadow.Name = "HandleShadow"
+    handleShadow.Size = handle.Size
+    handleShadow.Position = UDim2.new(0, 2, 0, 2)
+    handleShadow.BackgroundTransparency = 1
+    handleShadow.Image = "rbxassetid://131604521"  -- Change this to your desired asset ID
+    handleShadow.ImageColor3 = Color3.new(0, 0, 0)
+    handleShadow.ImageTransparency = 0.5
+    handleShadow.Parent = handle
+    handleShadow.ZIndex = handle.ZIndex - 1
+
+    --------------------------------------------------------------------------
+    -- 12. Define Positions for Off and On States of the Handle
+    --------------------------------------------------------------------------
+    local offPosition = UDim2.new(0, 2, 0.5, -13)
+    local onPosition  = UDim2.new(1, -28, 0.5, -13)
+    handle.Position = defaultState and onPosition or offPosition
+
+    --------------------------------------------------------------------------
+    -- 13. Final State Declaration for External Code Compatibility
+    --------------------------------------------------------------------------
+    local state = defaultState
+
 
 	--------------------------------------------------
 	-- Function to update the toggle state.

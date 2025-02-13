@@ -2076,6 +2076,320 @@ local themes = {
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 20, 60))
 	}),
 	TitleTextColor = Color3.fromRGB(220, 20, 60)  -- Secondary (Title Text)
+},
+["Cyber"] = {
+	-- A futuristic, neon theme with a dark base and bright cyan accents.
+	MainColor = Color3.fromRGB(0, 0, 0),
+	StrokeColor = Color3.fromRGB(0, 255, 255),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 150, 255))
+	}),
+	TitleBarColor = Color3.fromRGB(0, 0, 0),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))
+	}),
+	AccentColor = Color3.fromRGB(0, 255, 255),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+	}),
+	TitleTextColor = Color3.fromRGB(0, 255, 255)
+},
+
+["Vintage"] = {
+	-- A warm, old-time feel with earthy browns and tan highlights.
+	MainColor = Color3.fromRGB(102, 51, 0),
+	StrokeColor = Color3.fromRGB(160, 82, 45),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(102, 51, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 180, 140))
+	}),
+	TitleBarColor = Color3.fromRGB(102, 51, 0),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(102, 51, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 82, 45))
+	}),
+	AccentColor = Color3.fromRGB(160, 82, 45),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 82, 45)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(245, 222, 179))
+	}),
+	TitleTextColor = Color3.fromRGB(245, 222, 179)
+},
+
+["Mystic"] = {
+	-- A deep, enchanting theme with dark purples and hints of magenta.
+	MainColor = Color3.fromRGB(30, 0, 50),
+	StrokeColor = Color3.fromRGB(148, 0, 211),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 0, 50)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(75, 0, 130))
+	}),
+	TitleBarColor = Color3.fromRGB(30, 0, 50),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 0, 50)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(148, 0, 211))
+	}),
+	AccentColor = Color3.fromRGB(138, 43, 226),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 162, 200))
+	}),
+	TitleTextColor = Color3.fromRGB(200, 162, 200)
+},
+
+["Oceanic"] = {
+	-- A deep-sea inspired theme with navy tones and refreshing blues.
+	MainColor = Color3.fromRGB(0, 32, 63),
+	StrokeColor = Color3.fromRGB(0, 191, 255),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 32, 63)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 105, 148))
+	}),
+	TitleBarColor = Color3.fromRGB(0, 32, 63),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 32, 63)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 191, 255))
+	}),
+	AccentColor = Color3.fromRGB(0, 191, 255),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 248, 255))
+	}),
+	TitleTextColor = Color3.fromRGB(240, 248, 255)
+},
+
+["Sahara"] = {
+	-- A sun-soaked desert theme with sandy tones and warm accents.
+	MainColor = Color3.fromRGB(237, 201, 175),
+	StrokeColor = Color3.fromRGB(189, 183, 107),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(237, 201, 175)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(222, 184, 135))
+	}),
+	TitleBarColor = Color3.fromRGB(237, 201, 175),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(237, 201, 175)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(189, 183, 107))
+	}),
+	AccentColor = Color3.fromRGB(189, 183, 107),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(189, 183, 107)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(139, 69, 19))
+	}),
+	TitleTextColor = Color3.fromRGB(139, 69, 19)
+},
+
+["Inferno"] = {
+	-- A blazing theme of fire and heat with deep reds and oranges.
+	MainColor = Color3.fromRGB(50, 0, 0),
+	StrokeColor = Color3.fromRGB(255, 69, 0),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+	}),
+	TitleBarColor = Color3.fromRGB(50, 0, 0),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 69, 0))
+	}),
+	AccentColor = Color3.fromRGB(255, 69, 0),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 69, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 160, 122))
+	}),
+	TitleTextColor = Color3.fromRGB(255, 160, 122)
+},
+
+["Arctic"] = {
+	-- A cool, frosty theme with crisp blues and icy accents.
+	MainColor = Color3.fromRGB(200, 225, 255),
+	StrokeColor = Color3.fromRGB(135, 206, 250),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 225, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(173, 216, 230))
+	}),
+	TitleBarColor = Color3.fromRGB(200, 225, 255),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 225, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(135, 206, 250))
+	}),
+	AccentColor = Color3.fromRGB(135, 206, 250),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(135, 206, 250)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+	}),
+	TitleTextColor = Color3.fromRGB(0, 0, 0)
+},
+
+["Cosmic"] = {
+	-- A mysterious theme inspired by deep space with dark blues and purples.
+	MainColor = Color3.fromRGB(20, 0, 40),
+	StrokeColor = Color3.fromRGB(75, 0, 130),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 0, 40)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 0, 80))
+	}),
+	TitleBarColor = Color3.fromRGB(20, 0, 40),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 0, 40)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(75, 0, 130))
+	}),
+	AccentColor = Color3.fromRGB(75, 0, 130),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(75, 0, 130)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 255))
+	}),
+	TitleTextColor = Color3.fromRGB(200, 200, 255)
+},
+
+["Jungle"] = {
+	-- A lush, green theme evoking the dense vibrancy of the rainforest.
+	MainColor = Color3.fromRGB(0, 68, 27),
+	StrokeColor = Color3.fromRGB(34, 139, 34),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 68, 27)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 0))
+	}),
+	TitleBarColor = Color3.fromRGB(0, 68, 27),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 68, 27)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(34, 139, 34))
+	}),
+	AccentColor = Color3.fromRGB(34, 139, 34),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(34, 139, 34)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(144, 238, 144))
+	}),
+	TitleTextColor = Color3.fromRGB(255, 255, 255)
+},
+
+["Lemonade"] = {
+	-- A bright, citrus-inspired theme with soft yellows and golden accents.
+	MainColor = Color3.fromRGB(255, 250, 205),
+	StrokeColor = Color3.fromRGB(255, 255, 0),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 250, 205)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 0))
+	}),
+	TitleBarColor = Color3.fromRGB(255, 250, 205),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 250, 205)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 0))
+	}),
+	AccentColor = Color3.fromRGB(255, 255, 0),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 215, 0))
+	}),
+	TitleTextColor = Color3.fromRGB(128, 128, 0)
+},
+
+["Magenta"] = {
+	-- A bold, vibrant theme dominated by striking magenta hues.
+	MainColor = Color3.fromRGB(50, 0, 25),
+	StrokeColor = Color3.fromRGB(255, 0, 255),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 0, 25)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+	}),
+	TitleBarColor = Color3.fromRGB(50, 0, 25),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 0, 25)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+	}),
+	AccentColor = Color3.fromRGB(255, 0, 255),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 192, 203))
+	}),
+	TitleTextColor = Color3.fromRGB(255, 192, 203)
+},
+
+["Copper"] = {
+	-- A warm, metallic theme with rich copper tones and deep accents.
+	MainColor = Color3.fromRGB(184, 115, 51),
+	StrokeColor = Color3.fromRGB(128, 64, 0),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(184, 115, 51)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 105, 30))
+	}),
+	TitleBarColor = Color3.fromRGB(184, 115, 51),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(184, 115, 51)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(128, 64, 0))
+	}),
+	AccentColor = Color3.fromRGB(128, 64, 0),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(128, 64, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 228, 196))
+	}),
+	TitleTextColor = Color3.fromRGB(255, 228, 196)
+},
+
+["Smoky"] = {
+	-- A subdued theme of grays that evokes a misty, foggy atmosphere.
+	MainColor = Color3.fromRGB(105, 105, 105),
+	StrokeColor = Color3.fromRGB(169, 169, 169),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 105, 105)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(169, 169, 169))
+	}),
+	TitleBarColor = Color3.fromRGB(105, 105, 105),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 105, 105)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(169, 169, 169))
+	}),
+	AccentColor = Color3.fromRGB(169, 169, 169),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(169, 169, 169)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(211, 211, 211))
+	}),
+	TitleTextColor = Color3.fromRGB(211, 211, 211)
+},
+
+["Iridescent"] = {
+	-- A shimmering theme that changes between cool blues and soft violets.
+	MainColor = Color3.fromRGB(123, 104, 238),
+	StrokeColor = Color3.fromRGB(72, 61, 139),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(123, 104, 238)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 61, 139))
+	}),
+	TitleBarColor = Color3.fromRGB(123, 104, 238),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(123, 104, 238)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 61, 139))
+	}),
+	AccentColor = Color3.fromRGB(72, 61, 139),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(72, 61, 139)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(216, 191, 216))
+	}),
+	TitleTextColor = Color3.fromRGB(216, 191, 216)
+},
+
+["Frost"] = {
+	-- A cool, icy theme with light blues and frosted accents.
+	MainColor = Color3.fromRGB(230, 240, 255),
+	StrokeColor = Color3.fromRGB(180, 210, 255),
+	OverlayGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(230, 240, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 220, 255))
+	}),
+	TitleBarColor = Color3.fromRGB(230, 240, 255),
+	TitleGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(230, 240, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 210, 255))
+	}),
+	AccentColor = Color3.fromRGB(180, 210, 255),
+	TextGradientColors = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 210, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+	}),
+	TitleTextColor = Color3.fromRGB(0, 0, 50)
 }
 
 }

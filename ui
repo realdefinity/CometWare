@@ -1,11 +1,13 @@
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
+-- Create the Loading GUI (full-screen, transparent)
 local loadingGui = Instance.new("ScreenGui")
 loadingGui.Name = "CometLoadingGui"
 loadingGui.Parent = game.CoreGui
 loadingGui.IgnoreGuiInset = true
 
+-- Invisible container solely for positioning
 local container = Instance.new("Frame")
 container.Name = "Container"
 container.Parent = loadingGui
@@ -13,94 +15,111 @@ container.AnchorPoint = Vector2.new(0.5, 0.5)
 container.Position = UDim2.new(0.5, 0, 0.5, 0)
 container.Size = UDim2.new(0, 0, 0, 0)
 container.BackgroundTransparency = 1
+container.BorderSizePixel = 0
 
+-- MAIN TITLE (Comet)
 local cometLabel = Instance.new("TextLabel")
 cometLabel.Name = "CometLabel"
 cometLabel.Parent = container
-cometLabel.Size = UDim2.new(1, 0, 0, 140)
+cometLabel.Size = UDim2.new(1, 0, 0, 180)
 cometLabel.Position = UDim2.new(0, 0, 0, 0)
 cometLabel.BackgroundTransparency = 1
 cometLabel.Text = "Comet"
 cometLabel.Font = Enum.Font.ArimoBold
-cometLabel.TextSize = 144
+cometLabel.TextSize = 160
 cometLabel.TextColor3 = Color3.fromRGB(240,240,240)
-cometLabel.TextStrokeColor3 = Color3.new(0,0,0)
-cometLabel.TextStrokeTransparency = 0.3
-cometLabel.TextTransparency = 1
+cometLabel.TextStrokeColor3 = Color3.new(255, 252, 252)
+cometLabel.TextStrokeTransparency = 0.2  -- initial stroke transparency
+cometLabel.TextTransparency = 1  -- start invisible
 cometLabel.ZIndex = 2
 
-local cometGradient = Instance.new("UIGradient", cometLabel)
-cometGradient.Rotation = 0
-cometGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,122,255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))
+local cometTextGradient = Instance.new("UIGradient", cometLabel)
+cometTextGradient.Rotation = 0
+cometTextGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 252, 252)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,150,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 252, 252))
 })
-cometGradient.Offset = Vector2.new(-1, 0)
+cometTextGradient.Offset = Vector2.new(-1, 0)
 
+-- EXECUTOR LABEL (directly below "Comet")
 local executorName = identifyexecutor() or "Unknown Executor"
 local executorLabel = Instance.new("TextLabel")
 executorLabel.Name = "ExecutorLabel"
 executorLabel.Parent = container
 executorLabel.Size = UDim2.new(1, 0, 0, 60)
-executorLabel.Position = UDim2.new(0, 0, 0, 145)
+executorLabel.Position = UDim2.new(0, 0, 0, 190)  -- immediately below the main title
 executorLabel.BackgroundTransparency = 1
 executorLabel.Text = executorName
 executorLabel.Font = Enum.Font.ArimoBold
-executorLabel.TextSize = 28
+executorLabel.TextSize = 36
 executorLabel.TextColor3 = Color3.fromRGB(230,230,230)
-executorLabel.TextStrokeColor3 = Color3.new(0,0,0)
-executorLabel.TextStrokeTransparency = 0.3
-executorLabel.TextTransparency = 1
+executorLabel.TextStrokeColor3 = Color3.new(255, 252, 252)
+executorLabel.TextStrokeTransparency = 0.2  -- initial stroke transparency
+executorLabel.TextTransparency = 1  -- start invisible
 executorLabel.ZIndex = 2
 
 local executorGradient = Instance.new("UIGradient", executorLabel)
 executorGradient.Rotation = 0
 executorGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,200,255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 252, 252)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,200,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 252, 252))
 })
 executorGradient.Offset = Vector2.new(-1, 0)
 
-local popInTween = TweenService:Create(container, TweenInfo.new(1, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0,500,0,220)})
+-- POP-IN ANIMATION: Expand container with an elastic ease
+local popInTween = TweenService:Create(container, TweenInfo.new(1.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Size = UDim2.new(0,600,0,300)})
 popInTween:Play()
 popInTween.Completed:Connect(function()
-	local fadeInComet = TweenService:Create(cometLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
-	local fadeInExecutor = TweenService:Create(executorLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
-	fadeInComet:Play()
-	fadeInExecutor:Play()
+    -- Fade in the text very smoothly over 2 seconds
+    local fadeInComet = TweenService:Create(cometLabel, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
+    local fadeInExecutor = TweenService:Create(executorLabel, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextTransparency = 0})
+    fadeInComet:Play()
+    fadeInExecutor:Play()
 end)
 
+-- CONTINUOUS SMOOTH ANIMATIONS: Pulsation, gradient shimmer, animated stroke, and gentle bobbing
 local startTime = tick()
 local renderConn = RunService.RenderStepped:Connect(function()
-	local t = tick() - startTime
-	local cometOff = math.sin(t * 2) * 1
-	cometGradient.Offset = Vector2.new(cometOff, 0)
-	cometLabel.TextSize = 144 + 8 * math.sin(t * 3)
-	local execOff = math.cos(t * 2.5) * 1
-	executorGradient.Offset = Vector2.new(execOff, 0)
-	local bob = math.sin(t * 2) * 4
-	executorLabel.Position = UDim2.new(0, 0, 0, 100 + bob)
-	local containerRot = math.sin(t) * 2
-	container.Rotation = containerRot
+    local t = tick() - startTime
+
+    -- Animate the comet label's gradient offset and text size for a dynamic shimmer
+    local cometOff = math.sin(t * 2) * 1.5
+    cometTextGradient.Offset = Vector2.new(cometOff, 0)
+    cometLabel.TextSize = 160 + 8 * math.sin(t * 2.2)
+
+    -- Animate the stroke transparency to create a pulsing stroke effect
+    local strokePulse = 0.2 + 0.1 * math.sin(t * 3)  -- oscillates between 0.1 and 0.3
+    cometLabel.TextStrokeTransparency = strokePulse
+
+    -- Executor label: animate gradient offset and vertical bobbing
+    local execOff = math.cos(t * 2.5) * 1.5
+    executorGradient.Offset = Vector2.new(execOff, 0)
+    local bob = math.sin(t * 2) * 6
+    executorLabel.Position = UDim2.new(0, 0, 0, 130 + bob)
+    executorLabel.TextStrokeTransparency = strokePulse  -- sync stroke animation with cometLabel
+
+    -- Subtle container rotation for fluid motion
+    container.Rotation = math.sin(t * 0.3) * 1.5
 end)
 
-wait(3)
+-- Let the animation run for a few seconds
+wait(4)
 
-local fadeOutTweenComet = TweenService:Create(cometLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
-local fadeOutTweenExecutor = TweenService:Create(executorLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
+-- FADE-OUT ANIMATION: Smoothly fade out text and then shrink the container
+local fadeOutTweenComet = TweenService:Create(cometLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
+local fadeOutTweenExecutor = TweenService:Create(executorLabel, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1})
 fadeOutTweenComet:Play()
-	fadeOutTweenExecutor:Play()
+fadeOutTweenExecutor:Play()
 fadeOutTweenExecutor.Completed:Connect(function()
-	renderConn:Disconnect()
-	local shrinkTween = TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0), Rotation = 0})
-	shrinkTween:Play()
-	shrinkTween.Completed:Connect(function()
-		loadingGui:Destroy()
-	end)
+    renderConn:Disconnect()
+    local shrinkTween = TweenService:Create(container, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0), Rotation = 0})
+    shrinkTween:Play()
+    shrinkTween.Completed:Connect(function()
+        loadingGui:Destroy()
+    end)
 end)
-
 
 
 
@@ -1032,120 +1051,6 @@ end)
 	return button
 end
 
----------------------------
--- Color Picker 
----------------------------
-local function createColorPicker(opts, callback)
-	opts = opts or {}
-	local labelText = opts.Label or "Color Picker"
-	local defaultColor = opts.Default or Color3.fromRGB(0,150,255)
-	local size = opts.Size or UDim2.new(0,200,0,200)
-	
-	-- Container for the color picker
-	local container = Instance.new("Frame")
-	container.Name = "ColorPickerContainer"
-	container.Size = size
-	container.BackgroundColor3 = Color3.fromRGB(20,20,20)
-	container.BorderSizePixel = 0
-	container.Parent = opts.Parent or game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
-	
-	-- Label at the top
-	local label = Instance.new("TextLabel")
-	label.Name = "PickerLabel"
-	label.Size = UDim2.new(1,0,0,25)
-	label.Position = UDim2.new(0,0,0,0)
-	label.BackgroundTransparency = 1
-	label.Text = labelText
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 22
-	label.TextColor3 = Color3.fromRGB(240,240,240)
-	label.Parent = container
-	
-	-- The main area for picking a color
-	local pickerFrame = Instance.new("Frame")
-	pickerFrame.Name = "PickerFrame"
-	pickerFrame.Size = UDim2.new(1,0,1,-25)
-	pickerFrame.Position = UDim2.new(0,0,0,25)
-	pickerFrame.BackgroundColor3 = Color3.new(1,1,1)
-	pickerFrame.BackgroundTransparency = 0
-	pickerFrame.BorderSizePixel = 0
-	pickerFrame.Parent = container
-	
-	-- Full-spectrum hue gradient
-	local hueGradient = Instance.new("UIGradient", pickerFrame)
-	hueGradient.Rotation = 0
-	hueGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1,0,0)),       -- Red
-		ColorSequenceKeypoint.new(0.17, Color3.new(1,1,0)),      -- Yellow
-		ColorSequenceKeypoint.new(0.34, Color3.new(0,1,0)),      -- Green
-		ColorSequenceKeypoint.new(0.51, Color3.new(0,1,1)),      -- Cyan
-		ColorSequenceKeypoint.new(0.68, Color3.new(0,0,1)),      -- Blue
-		ColorSequenceKeypoint.new(0.85, Color3.new(1,0,1)),      -- Magenta
-		ColorSequenceKeypoint.new(1, Color3.new(1,0,0))          -- Back to Red
-	})
-	
-	-- Overlay for saturation/value control
-	local overlay = Instance.new("Frame", pickerFrame)
-	overlay.Name = "SaturationOverlay"
-	overlay.Size = UDim2.new(1,0,1,0)
-	overlay.Position = UDim2.new(0,0,0,0)
-	overlay.BackgroundTransparency = 1
-	overlay.ZIndex = 2
-	
-	local overlayGradient = Instance.new("UIGradient", overlay)
-	overlayGradient.Rotation = 90
-	overlayGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),  -- full brightness/saturation
-		ColorSequenceKeypoint.new(1, Color3.new(0,0,0))   -- dark
-	})
-	
-	-- Display for the currently selected color (optional visual feedback)
-	local selectedDisplay = Instance.new("Frame")
-	selectedDisplay.Name = "SelectedDisplay"
-	selectedDisplay.Size = UDim2.new(0,40,0,40)
-	selectedDisplay.Position = UDim2.new(1, -45, 1, -45)
-	selectedDisplay.BackgroundColor3 = defaultColor
-	selectedDisplay.BorderSizePixel = 0
-	selectedDisplay.Parent = container
-	selectedDisplay.ZIndex = 3
-	
-	-- When the user clicks or drags on the pickerFrame, update the chosen color.
-	local function updateColor(input)
-		local absPos = pickerFrame.AbsolutePosition
-		local absSize = pickerFrame.AbsoluteSize
-		local relX = math.clamp((input.Position.X - absPos.X) / absSize.X, 0, 1)
-		local relY = math.clamp((input.Position.Y - absPos.Y) / absSize.Y, 0, 1)
-		-- Use X as Hue, and Y (inverted) as Saturation; value is fixed at 1.
-		local chosenColor = Color3.fromHSV(relX, 1 - relY, 1)
-		selectedDisplay.BackgroundColor3 = chosenColor
-		if callback then
-			callback(chosenColor)
-		end
-	end
-	
-	pickerFrame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			updateColor(input)
-		end
-	end)
-	pickerFrame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			updateColor(input)
-		end
-	end)
-	
-	return container
-end
-
--- Example usage:
--- exampleSection:AddColorPicker({
---     Label = "Pick a Color",
---     Default = Color3.fromRGB(0,150,255),
---     Size = UDim2.new(0,200,0,200)
--- }, function(chosenColor)
---     print("Chosen color:", chosenColor)
---     -- Additional functionality goes here.
--- end)
 
 -- Base UI Window & Tab System with Sections
 ---------------------------
@@ -1712,52 +1617,145 @@ panelPadding.PaddingRight = UDim.new(0, 10)
 ------------------------------------------------------------
 -- Title Label and Close Button
 ------------------------------------------------------------
+-- Create a drop shadow by cloning the title and offsetting it.
 local panelTitle = Instance.new("TextLabel")
 panelTitle.Name = "PanelTitle"
 panelTitle.Parent = themePanel
-panelTitle.Size = UDim2.new(1, -40, 0, 30)  -- Leaves space for the close button
+panelTitle.Size = UDim2.new(1, -40, 0, 40)  -- Increased height for extra style
 panelTitle.Position = UDim2.new(0, 0, 0, 0)
 panelTitle.BackgroundTransparency = 1
 panelTitle.Text = "Select Theme"
-panelTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 panelTitle.Font = Enum.Font.GothamBold
-panelTitle.TextSize = 22
+panelTitle.TextSize = 26
+panelTitle.TextScaled = true
+panelTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+panelTitle.TextStrokeTransparency = 0.5
+panelTitle.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+panelTitle.ZIndex = 2
+
+-- Add a gradient effect for a slick look.
+local titleGradient = Instance.new("UIGradient", panelTitle)
+titleGradient.Rotation = 90
+titleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 240, 240)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
+})
+
+-- Create a shadow label behind the title for extra depth.
+local panelTitleShadow = panelTitle:Clone()
+panelTitleShadow.Name = "PanelTitleShadow"
+panelTitleShadow.Parent = themePanel
+panelTitleShadow.Position = panelTitle.Position + UDim2.new(0, 2, 0, 2)
+panelTitleShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
+panelTitleShadow.TextStrokeTransparency = 1
+panelTitleShadow.ZIndex = panelTitle.ZIndex - 1
+
+-- Create a UIScale object for hover scaling.
+local titleScale = Instance.new("UIScale", panelTitle)
+titleScale.Scale = 1
+
+-- Smooth hover animations using TweenService.
+local TweenService = game:GetService("TweenService")
+local hoverTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+panelTitle.MouseEnter:Connect(function()
+    TweenService:Create(titleScale, hoverTweenInfo, {Scale = 1.05}):Play()
+    TweenService:Create(panelTitle, hoverTweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+
+panelTitle.MouseLeave:Connect(function()
+    TweenService:Create(titleScale, hoverTweenInfo, {Scale = 1}):Play()
+    TweenService:Create(panelTitle, hoverTweenInfo, {TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+end)
+
+local TweenService = game:GetService("TweenService")
 
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Parent = themePanel
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -30, 0, 0)
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -38, 0, 6)
 closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.Text = "✕"
+closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
+closeButton.TextScaled = true
+closeButton.TextStrokeTransparency = 0.5
 closeButton.BorderSizePixel = 0
+closeButton.AutoButtonColor = false
 
+-- Rounded corners and stroke for a smooth look
 local closeCorner = Instance.new("UICorner", closeButton)
-closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.CornerRadius = UDim.new(0, 16)
 
+local closeStroke = Instance.new("UIStroke", closeButton)
+closeStroke.Thickness = 2
+closeStroke.Color = Color3.fromRGB(150, 0, 0)
+closeStroke.Transparency = 0
+
+-- Drop shadow for depth
+local shadow = Instance.new("Frame")
+shadow.Name = "Shadow"
+shadow.Parent = closeButton
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+shadow.Position = UDim2.new(0.5, 3, 0.5, 3)
+shadow.Size = UDim2.new(1, 0, 1, 0)
+shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+shadow.BackgroundTransparency = 0.7
+shadow.ZIndex = closeButton.ZIndex - 1
+local shadowCorner = Instance.new("UICorner", shadow)
+shadowCorner.CornerRadius = closeCorner.CornerRadius
+
+-- Utility function for smooth tweens
+local function smoothTween(object, properties, time)
+	local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(object, tweenInfo, properties)
+	tween:Play()
+	return tween
+end
+
+-- Hover Animations: lighten background and increase text size smoothly
 closeButton.MouseEnter:Connect(function()
-    TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    }):Play()
-end)
-closeButton.MouseLeave:Connect(function()
-    TweenService:Create(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    }):Play()
+	smoothTween(closeButton, { BackgroundColor3 = Color3.fromRGB(255, 80, 80) }, 0.25)
+	smoothTween(closeButton, { TextSize = 26 }, 0.25)
 end)
 
-closeButton.MouseButton1Click:Connect(function()
-    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(themePanel, tweenInfo, {BackgroundTransparency = 1})
-    tween:Play()
-    tween.Completed:Connect(function()
-        themePanel.Visible = false
-        themePanel.BackgroundTransparency = 0  -- Reset for next time.
-    end)
+closeButton.MouseLeave:Connect(function()
+	smoothTween(closeButton, { BackgroundColor3 = Color3.fromRGB(200, 50, 50) }, 0.25)
+	smoothTween(closeButton, { TextSize = 22 }, 0.25)
 end)
+
+-- Click Animations: a rippling effect and smooth panel fade-out
+closeButton.MouseButton1Click:Connect(function()
+	-- Create a ripple effect
+	local ripple = Instance.new("Frame")
+	ripple.Name = "Ripple"
+	ripple.Parent = closeButton
+	ripple.Size = UDim2.new(0, 0, 0, 0)
+	ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+	ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+	ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ripple.BackgroundTransparency = 0.3
+	ripple.ZIndex = closeButton.ZIndex + 1
+	local rippleCorner = Instance.new("UICorner", ripple)
+	rippleCorner.CornerRadius = closeCorner.CornerRadius
+	
+	smoothTween(ripple, { Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1 }, 0.35)
+	task.delay(0.35, function()
+		ripple:Destroy()
+	end)
+	
+	-- Fade out the panel smoothly
+	local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(themePanel, tweenInfo, { BackgroundTransparency = 1 })
+	tween:Play()
+	tween.Completed:Connect(function()
+		themePanel.Visible = false
+		themePanel.BackgroundTransparency = 0  -- Reset for next time.
+	end)
+end)
+
+
 
 ------------------------------------------------------------
 -- Scrolling Frame for Theme Options
@@ -1765,27 +1763,50 @@ end)
 local themeListFrame = Instance.new("ScrollingFrame")
 themeListFrame.Name = "ThemeListFrame"
 themeListFrame.Parent = themePanel
-themeListFrame.BackgroundTransparency = 1
+themeListFrame.BackgroundTransparency = 0.1
+themeListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 themeListFrame.Position = UDim2.new(0, 0, 0, 40)  -- Positioned below the title area
 themeListFrame.Size = UDim2.new(1, 0, 1, -40)
 themeListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-themeListFrame.ScrollBarThickness = 4
-themeListFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+themeListFrame.ScrollBarThickness = 6
+themeListFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 themeListFrame.BorderSizePixel = 0
 
-local themeListLayout = Instance.new("UIListLayout", themeListFrame)
-themeListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-themeListLayout.Padding = UDim.new(0, 8)
+-- Rounded corners
+local listCorner = Instance.new("UICorner", themeListFrame)
+listCorner.CornerRadius = UDim.new(0, 12)
 
+-- Outline stroke for a subtle border effect
+local listStroke = Instance.new("UIStroke", themeListFrame)
+listStroke.Thickness = 1
+listStroke.Color = Color3.fromRGB(50, 50, 50)
+listStroke.Transparency = 0.2
+
+-- Gradient background for depth
+local listGradient = Instance.new("UIGradient", themeListFrame)
+listGradient.Rotation = 45
+listGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 30))
+})
+
+-- Padding for inner content
 local themeListPadding = Instance.new("UIPadding", themeListFrame)
 themeListPadding.PaddingTop = UDim.new(0, 10)
 themeListPadding.PaddingBottom = UDim.new(0, 10)
 themeListPadding.PaddingLeft = UDim.new(0, 10)
 themeListPadding.PaddingRight = UDim.new(0, 10)
 
+-- Layout for theme options
+local themeListLayout = Instance.new("UIListLayout", themeListFrame)
+themeListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+themeListLayout.Padding = UDim.new(0, 8)
+
+-- Dynamically update CanvasSize based on content height
 themeListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     themeListFrame.CanvasSize = UDim2.new(0, 0, 0, themeListLayout.AbsoluteContentSize.Y + 20)
 end)
+
 
 ------------------------------------------------------------
 -- Draggable Functionality for the Panel
@@ -2510,24 +2531,76 @@ end
 -- THEME OPTION BUTTONS (Automatically Generated)
 -----------------------------------------------
 for themeName, themeData in pairs(themes) do
-	local themeOption = Instance.new("TextButton")
-	themeOption.Name = "ThemeOption_" .. themeName
-	themeOption.Parent = themePanel
-	themeOption.Size = UDim2.new(1, 0, 0, 30)
-	themeOption.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	themeOption.BorderSizePixel = 0
-	themeOption.Text = themeName
-	themeOption.Font = Enum.Font.GothamBold
-	themeOption.TextSize = 18
-	themeOption.TextColor3 = Color3.fromRGB(240, 240, 240)
-	themeOption.LayoutOrder = 2
-	
-	local optionCorner = Instance.new("UICorner", themeOption)
-	optionCorner.CornerRadius = UDim.new(0, 6)
-	
-	themeOption.MouseButton1Click:Connect(function()
-		applyTheme(themeName)
-	end)
+    local themeOption = Instance.new("TextButton")
+    themeOption.Name = "ThemeOption_" .. themeName
+    themeOption.Parent = themePanel  -- (It will be auto-reparented to your scrolling frame)
+    themeOption.Size = UDim2.new(1, 0, 0, 40)  -- Taller for better preview
+    themeOption.BackgroundColor3 = themeData.MainColor or Color3.fromRGB(50, 50, 50)
+    themeOption.BorderSizePixel = 0
+    themeOption.Text = themeName
+    themeOption.Font = Enum.Font.GothamBold
+    themeOption.TextSize = 20
+
+    -- Ensure text contrast: if background is very dark, force white text.
+    local bg = themeData.MainColor or Color3.fromRGB(50,50,50)
+    local isDark = (bg.R < 0.2 and bg.G < 0.2 and bg.B < 0.2)
+    themeOption.TextColor3 = isDark and Color3.fromRGB(255,255,255) or (themeData.TitleTextColor or Color3.fromRGB(240,240,240))
+    themeOption.TextStrokeTransparency = 0
+    themeOption.TextStrokeColor3 = Color3.new(0,0,0)
+    themeOption.LayoutOrder = 2
+    themeOption.AutoButtonColor = false
+
+    -- Rounded corners
+    local optionCorner = Instance.new("UICorner", themeOption)
+    optionCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Apply the theme's gradient if available.
+    if themeData.OverlayGradientColors then
+        local optionGradient = Instance.new("UIGradient", themeOption)
+        optionGradient.Rotation = 45
+        optionGradient.Color = themeData.OverlayGradientColors
+    end
+
+    -- Outline stroke matching the theme.
+    local optionStroke = Instance.new("UIStroke", themeOption)
+    optionStroke.Thickness = 1
+    optionStroke.Color = themeData.StrokeColor or Color3.new(0,0,0)
+    optionStroke.Transparency = 0.2
+
+    -- Create a UIScale for smooth scaling animations.
+    local uiScale = Instance.new("UIScale", themeOption)
+    uiScale.Scale = 1
+
+    local tweenTime = 0.3
+
+    -- Smooth Hover Animation using Sine easing.
+    themeOption.MouseEnter:Connect(function()
+        TweenService:Create(uiScale, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Scale = 1.05}):Play()
+        local accent = themeData.AccentColor or themeData.MainColor
+        local lightened = (themeData.MainColor or Color3.fromRGB(50,50,50)):Lerp(Color3.fromRGB(255,255,255), 0.1)
+        TweenService:Create(themeOption, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = lightened
+        }):Play()
+    end)
+
+    themeOption.MouseLeave:Connect(function()
+        TweenService:Create(uiScale, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        TweenService:Create(themeOption, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = themeData.MainColor
+        }):Play()
+    end)
+
+    -- Smooth Click Animation: a gentle pulse effect.
+    themeOption.MouseButton1Click:Connect(function()
+        local originalTransparency = themeOption.BackgroundTransparency
+        local pulseDown = TweenService:Create(themeOption, TweenInfo.new(tweenTime / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.2})
+        local pulseUp = TweenService:Create(themeOption, TweenInfo.new(tweenTime / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = originalTransparency})
+        pulseDown:Play()
+        pulseDown.Completed:Connect(function()
+            pulseUp:Play()
+        end)
+        applyTheme(themeName)
+    end)
 end
 
 
@@ -2587,7 +2660,7 @@ local function createTab(windowAPI, tabName)
 		listLayout.FillDirection = Enum.FillDirection.Horizontal
 		listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		listLayout.Padding = UDim.new(0, 5)
+		listLayout.Padding = UDim.new(0, 4.5)
 		listLayout.Parent = tabButtonsFrame
 	end
 
@@ -2710,12 +2783,12 @@ TweenService:Create(indicator, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.Ea
 	tabContent.BorderSizePixel = 0
 	tabContent.ScrollBarThickness = 4
 	tabContent.Visible = initActive
-	tabContent.ZIndex = 2
+	tabContent.ZIndex = 0
 	tabContent.Parent = windowAPI.TabContentFrame
 
 	local listLayout = Instance.new("UIListLayout")
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	listLayout.Padding = UDim.new(0, 5)
+	listLayout.Padding = UDim.new(0, 3)
 	listLayout.Parent = tabContent
 
 	tab.Button = tabButton
@@ -2726,13 +2799,13 @@ function tab:AddSection(sectionName)
 	section.Name = sectionName
 	local sectionFrame = Instance.new("Frame")
 	sectionFrame.Name = "Section_" .. sectionName
-	sectionFrame.Size = UDim2.new(1, 0, 0, 0)
-	sectionFrame.BackgroundTransparency = 1
+	sectionFrame.Size = UDim2.new(0.1, 0, 0, 0)
+	sectionFrame.BackgroundTransparency = 0
 	sectionFrame.Parent = tabContent
 
 	local sectionLayout = Instance.new("UIListLayout", sectionFrame)
 	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.Padding = UDim.new(0, 12)
 
 	section.Frame = sectionFrame
 
@@ -3111,328 +3184,3 @@ end
 
 _G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,500,0,400) })
 print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")
-
-local MovementTab = _G.baseWindow:AddTab("Movement")
-local VisualsTab = _G.baseWindow:AddTab("Visuals")
-local fpsSection = VisualsTab:AddSection("FPS")
-local MovementSection = MovementTab:AddSection("Movement")
-
--- FPS Booster and Revert Functions
-
-FPSBooster = {}
-
-local FPSBooster = {}
-
-function FPSBooster:Boost()
-	local Lighting = game:GetService("Lighting")
-	
-	self.OriginalLighting = {
-		GlobalShadows = Lighting.GlobalShadows,
-		FogEnd = Lighting.FogEnd,
-		Brightness = Lighting.Brightness,
-		EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
-		EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
-	}
-	
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			if not obj:GetAttribute("OrigMaterial") then
-				obj:SetAttribute("OrigMaterial", obj.Material.Name)
-				obj:SetAttribute("OrigReflectance", obj.Reflectance)
-			end
-			obj.Material = Enum.Material.SmoothPlastic
-			obj.Reflectance = 0
-		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
-			if obj:GetAttribute("OrigEnabled") == nil then
-				obj:SetAttribute("OrigEnabled", obj.Enabled)
-			end
-			obj.Enabled = false
-		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-			if obj:GetAttribute("OrigEnabled") == nil then
-				obj:SetAttribute("OrigEnabled", obj.Enabled)
-			end
-			obj.Enabled = false
-		end
-	end
-	
-	Lighting.GlobalShadows = false
-	Lighting.FogEnd = 9e9
-	Lighting.Brightness = 1
-	Lighting.EnvironmentSpecularScale = 0
-	Lighting.EnvironmentDiffuseScale = 0
-	
-	if workspace:FindFirstChildOfClass("Terrain") then
-		workspace.Terrain.Decoration = false
-	end
-end
-
-function FPSBooster:Revert()
-	local Lighting = game:GetService("Lighting")
-	
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			local origMat = obj:GetAttribute("OrigMaterial")
-			local origRef = obj:GetAttribute("OrigReflectance")
-			if origMat then
-				-- Use the original material name to revert, or fallback to Plastic.
-				obj.Material = Enum.Material[origMat] or Enum.Material.Plastic
-			else
-				obj.Material = Enum.Material.Plastic
-			end
-			if origRef ~= nil then
-				obj.Reflectance = origRef
-			else
-				obj.Reflectance = 0.5 -- Fallback value if not stored
-			end
-		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
-			local origEnabled = obj:GetAttribute("OrigEnabled")
-			obj.Enabled = (origEnabled ~= nil) and origEnabled or true
-		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-			local origEnabled = obj:GetAttribute("OrigEnabled")
-			obj.Enabled = (origEnabled ~= nil) and origEnabled or true
-		end
-	end
-	
-	-- Restore Lighting settings
-	if self.OriginalLighting then
-		Lighting.GlobalShadows = self.OriginalLighting.GlobalShadows
-		Lighting.FogEnd = self.OriginalLighting.FogEnd
-		Lighting.Brightness = self.OriginalLighting.Brightness
-		Lighting.EnvironmentSpecularScale = self.OriginalLighting.EnvironmentSpecularScale
-		Lighting.EnvironmentDiffuseScale = self.OriginalLighting.EnvironmentDiffuseScale
-	else
-		Lighting.GlobalShadows = true
-		Lighting.FogEnd = 100000
-		Lighting.Brightness = 2
-		Lighting.EnvironmentSpecularScale = 1
-		Lighting.EnvironmentDiffuseScale = 1
-	end
-	
-	if workspace:FindFirstChildOfClass("Terrain") then
-		workspace.Terrain.Decoration = true
-	end
-end
-
--- FPS Booster Toggle in the FPS Section
-fpsSection:AddToggle({ 
-    Label = "FPS booster", 
-    Default = false,
-    Size = UDim2.new(0, 300, 0, 40)
-}, function(state)
-    print("toggle:", state)
-    if state then
-         FPSBooster:Boost()
-    else
-         FPSBooster:Revert()
-    end
-end)
-
--- Variables
-local toggles = {
-    customSpeedEnabled = false
-}
-local customSpeed = 16 -- Default speed
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-toggles = toggles or {}
-toggles.customSpeedEnabled = false
-customSpeed = 16
-local speedConnection
-
-local function applyCustomSpeed()
-    if speedConnection then
-        speedConnection:Disconnect()
-    end
-    speedConnection = RunService.Stepped:Connect(function(_, deltaTime)
-        if toggles.customSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            local rootPart = LocalPlayer.Character.HumanoidRootPart
-            if humanoid and humanoid.MoveDirection.Magnitude > 0 then
-                local moveDirection = humanoid.MoveDirection * (customSpeed * deltaTime)
-                rootPart.CFrame = rootPart.CFrame + Vector3.new(moveDirection.X, 0, moveDirection.Z)
-            end
-        end
-    end)
-end
-
-MovementSection:AddToggle({ 
-    Label = "Speed", 
-    Default = false,
-    Size = UDim2.new(0, 300, 0, 40)
-}, function(state)
-    toggles.customSpeedEnabled = state
-    if state then
-        applyCustomSpeed()
-    else
-        if speedConnection then
-            speedConnection:Disconnect()
-        end
-    end
-end)
-
-MovementSection:AddSlider({ 
-    Label = "Set Speed",
-    Min = 16,
-    Max = 50,
-    Default = 16,
-    Size = UDim2.new(0, 300, 0, 100)
-}, function(value)
-    customSpeed = value
-end)
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-
-toggles = toggles or {}
-toggles.customJumpEnabled = false
-jumpPower = 50
-
-local function applyCustomJump()
-    UserInputService.JumpRequest:Connect(function()
-        if toggles.customJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = LocalPlayer.Character.HumanoidRootPart
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.FloorMaterial == Enum.Material.Air then return end
-            for i = 1, jumpPower, 5 do
-                task.wait(0.01)
-                rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0.5, 0)
-            end
-            task.wait(0.1)
-            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, -0.5, 0)
-        end
-    end)
-end
-
-MovementSection:AddToggle({
-    Label = "Jump Power",
-    Default = false,
-    Size = UDim2.new(0, 300, 0, 40)
-}, function(Value)
-    toggles.customJumpEnabled = Value
-    if Value then
-        applyCustomJump()
-    end
-end)
-
-MovementSection:AddSlider({
-    Label = "Set Jump Power",
-    Range = {10, 100},
-    Increment = 5,
-    Default = 50,
-    Size = UDim2.new(0, 300, 0, 100)
-}, function(Value)
-    jumpPower = Value
-end)
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-
--- State variables
-local flying = false
-local flySpeed = 5  -- Default fly speed
-local flyDirection = Vector3.new(0, 0, 0)
-local hrp = nil  -- HumanoidRootPart
-local flyConnection = nil
-
--- Key states for smooth flight movement
-local keys = {
-    W = false,
-    S = false,
-    A = false,
-    D = false,
-    Space = false,
-    Shift = false
-}
-
--- Start Fly function (with smooth, interpolated flight)
-local function startFly()
-    if flying or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    flying = true
-    hrp = LocalPlayer.Character.HumanoidRootPart
-    hrp.Anchored = true
-    flyConnection = RunService.RenderStepped:Connect(function(dt)
-        if flying and hrp then
-            flyDirection = Vector3.new(
-                ((keys.D and 1) or 0) + ((keys.A and -1) or 0),
-                ((keys.Space and 1) or 0) + ((keys.Shift and -1) or 0),
-                ((keys.S and 1) or 0) + ((keys.W and -1) or 0)
-            )
-            hrp.CFrame = hrp.CFrame * CFrame.new(flyDirection * flySpeed * 0.1)
-        end
-    end)
-end
-
--- Stop Fly function
-local function stopFly()
-    flying = false
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-    if hrp then
-        hrp.Anchored = false
-    end
-end
-
--- Update key states for flight
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.W then keys.W = true end
-    if input.KeyCode == Enum.KeyCode.S then keys.S = true end
-    if input.KeyCode == Enum.KeyCode.A then keys.A = true end
-    if input.KeyCode == Enum.KeyCode.D then keys.D = true end
-    if input.KeyCode == Enum.KeyCode.Space then keys.Space = true end
-    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = true end
-end)
-
-UserInputService.InputEnded:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.W then keys.W = false end
-    if input.KeyCode == Enum.KeyCode.S then keys.S = false end
-    if input.KeyCode == Enum.KeyCode.A then keys.A = false end
-    if input.KeyCode == Enum.KeyCode.D then keys.D = false end
-    if input.KeyCode == Enum.KeyCode.Space then keys.Space = false end
-    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = false end
-end)
-
--- UI Integration using your custom UI functions.
--- (Ensure MovementSection is a valid reference to your movement UI section.)
-MovementSection:AddToggle({
-    Label = "Enable Fly",
-    Default = false,
-    Size = UDim2.new(0, 300, 0, 40)
-}, function(Value)
-    if Value then
-        startFly()
-    else
-        stopFly()
-    end
-end)
-
-MovementSection:AddSlider({
-    Label = "Fly Speed",
-    Range = {1, 20},
-    Increment = 1,
-    Default = flySpeed,
-    Size = UDim2.new(0, 300, 0, 100)
-}, function(Value)
-    flySpeed = Value
-end)
-
-
-fpsSection:AddButton({
-    Text = "button",
-    Size = UDim2.new(0, 300, 0, 50)
-}, function()
-    print("Button clicked!")
-    -- functionality here
-end)

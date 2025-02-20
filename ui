@@ -842,74 +842,63 @@ local function createToggle(parent, opts)
 	-- Function to update the toggle state.
 	--------------------------------------------------
 local function updateToggle(newState)
+    -- Early exit if the toggle is already in this state.
+    if state == newState then
+        return
+    end
+
     state = newState
+    if state then
+        tween(handle, {Position = onPosition}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        tween(track, {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}, 0.25)
+        tween(handle, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.25)
+        tween(glow, {BackgroundTransparency = 0.4}, 0.25)
+        tween(borderStroke, {Color = Color3.fromRGB(0, 180, 255), Thickness = 4, Transparency = 0}, 0.25)
+    else
+        tween(handle, {Position = offPosition}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        tween(track, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.25)
+        tween(handle, {BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.25)
+        tween(glow, {BackgroundTransparency = 1}, 0.25)
+        tween(borderStroke, {Color = Color3.fromRGB(100, 100, 100), Thickness = 2, Transparency = 0.5}, 0.25)
+    end
 
-    -- Define animation properties for "on" and "off" states
-    local animations = {
-        on = {
-            handle = {Position = onPosition, BackgroundColor3 = Color3.fromRGB(255, 255, 255)},
-            track = {BackgroundColor3 = Color3.fromRGB(0, 180, 255)},
-            glow = {BackgroundTransparency = 0.4},
-            borderStroke = {Color = Color3.fromRGB(0, 180, 255), Thickness = 4, Transparency = 0}
-        },
-        off = {
-            handle = {Position = offPosition, BackgroundColor3 = Color3.fromRGB(200, 200, 200)},
-            track = {BackgroundColor3 = Color3.fromRGB(50, 50, 50)},
-            glow = {BackgroundTransparency = 1},
-            borderStroke = {Color = Color3.fromRGB(100, 100, 100), Thickness = 2, Transparency = 0.5}
-        }
-    }
-
-    -- Select the appropriate animation set based on the new state
-    local animationSet = state and animations.on or animations.off
-
-    -- Apply animations with smoother easing and synchronized timing
-    local duration = 0.35 -- Slightly longer for smoother transitions
-    local easingStyle = Enum.EasingStyle.Quad -- Smooth and natural
-    local easingDirection = Enum.EasingDirection.InOut -- Smooth acceleration and deceleration
-
-    tween(handle, animationSet.handle, duration, easingStyle, easingDirection)
-    tween(track, animationSet.track, duration, easingStyle, easingDirection)
-    tween(glow, animationSet.glow, duration, easingStyle, easingDirection)
-    tween(borderStroke, animationSet.borderStroke, duration, easingStyle, easingDirection)
-
-    -- Execute callback if it exists
     if callback then
         callback(state)
     end
 end
 
-	--------------------------------------------------
-	-- Connect mouse input: Toggle when track is clicked.
-	--------------------------------------------------
-	track.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			updateToggle(not state)
-		end
-	end)
+--------------------------------------------------
+-- Connect mouse input: Toggle when the track is clicked.
+--------------------------------------------------
+track.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        updateToggle(not state)
+    end
+end)
 
-	--------------------------------------------------
-	-- Hover animations for a polished look.
-	--------------------------------------------------
-	track.MouseEnter:Connect(function()
-		tween(trackScale, {Scale = 1.03}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		if state then
-			tween(borderStroke, {Thickness = 4.5, Transparency = 0}, 0.15)
-		else
-			tween(borderStroke, {Thickness = 2.5, Transparency = 0.4}, 0.15)
-		end
-	end)
-	track.MouseLeave:Connect(function()
-		tween(trackScale, {Scale = 1}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		if state then
-			tween(borderStroke, {Thickness = 4, Transparency = 0}, 0.15)
-		else
-			tween(borderStroke, {Thickness = 2, Transparency = 0.5}, 0.15)
-		end
-	end)
-	
-	return container
-end
+--------------------------------------------------
+-- Hover animations for the toggle track (a subtle, professional effect)
+--------------------------------------------------
+track.MouseEnter:Connect(function()
+    tween(trackScale, {Scale = 1.03}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    if state then
+        tween(borderStroke, {Thickness = 4.5, Transparency = 0}, 0.15)
+    else
+        tween(borderStroke, {Thickness = 2.5, Transparency = 0.4}, 0.15)
+    end
+end)
+
+track.MouseLeave:Connect(function()
+    tween(trackScale, {Scale = 1}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    if state then
+        tween(borderStroke, {Thickness = 4, Transparency = 0}, 0.15)
+    else
+        tween(borderStroke, {Thickness = 2, Transparency = 0.5}, 0.15)
+    end
+end)
+
+return container
+
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")

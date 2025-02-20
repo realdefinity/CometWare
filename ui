@@ -3099,7 +3099,6 @@ _G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,5
 print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")
 
 local exampleTab = _G.baseWindow:AddTab("Tab Name")
-
 local exampleSection = exampleTab:AddSection("a section")
 
 exampleSection:AddSlider({
@@ -3120,3 +3119,11 @@ exampleSection:AddSlider({
     end
 end)
 
+exampleSection:AddToggle({
+    Label = "toggle",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    print("toggle:", state)
+    -- Toggle functionality would go here.
+end)

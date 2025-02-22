@@ -1,4 +1,7 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/CometWare/refs/heads/main/newui'))()
 
+local MainTab = _G.baseWindow:AddTab("Main")
+local MainSection = MainTab:AddSection("main")
 local MovementTab = _G.baseWindow:AddTab("Movement")
 local MovementSection = MovementTab:AddSection("movement")
 
@@ -201,4 +204,172 @@ MovementSection:AddSlider({
     Size = UDim2.new(0, 300, 0, 100)
 }, function(Value)
     flySpeed = Value
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Toggle for Skeleton ESP
+local skeletonESPEnabled = false
+local espConnection
+
+-- Table to hold each enemy’s ESP lines
+local skeletonESP = {}
+
+-- Get the connections (joints) for the character.
+-- For R6, we assume parts: "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
+-- For R15, we use a more detailed set.
+local function getSkeletonConnections(character)
+    local connections = {}
+    if character:FindFirstChild("UpperTorso") then
+        -- R15 rig connections
+        table.insert(connections, {"Head", "UpperTorso"})
+        table.insert(connections, {"UpperTorso", "LeftUpperArm"})
+        table.insert(connections, {"LeftUpperArm", "LeftLowerArm"})
+        table.insert(connections, {"LeftLowerArm", "LeftHand"})
+        table.insert(connections, {"UpperTorso", "RightUpperArm"})
+        table.insert(connections, {"RightUpperArm", "RightLowerArm"})
+        table.insert(connections, {"RightLowerArm", "RightHand"})
+        table.insert(connections, {"UpperTorso", "LowerTorso"})
+        table.insert(connections, {"LowerTorso", "LeftUpperLeg"})
+        table.insert(connections, {"LeftUpperLeg", "LeftLowerLeg"})
+        table.insert(connections, {"LeftLowerLeg", "LeftFoot"})
+        table.insert(connections, {"LowerTorso", "RightUpperLeg"})
+        table.insert(connections, {"RightUpperLeg", "RightLowerLeg"})
+        table.insert(connections, {"RightLowerLeg", "RightFoot"})
+    else
+        -- Assume R6 rig
+        table.insert(connections, {"Head", "Torso"})
+        table.insert(connections, {"Torso", "Left Arm"})
+        table.insert(connections, {"Torso", "Right Arm"})
+        table.insert(connections, {"Torso", "Left Leg"})
+        table.insert(connections, {"Torso", "Right Leg"})
+    end
+    return connections
+end
+
+-- Create drawing objects for a given enemy player.
+local function createSkeletonDrawing(player)
+    if skeletonESP[player] then return end
+    skeletonESP[player] = {}  -- Table of connection data for this player
+    local character = player.Character
+    if not character then return end
+    local connections = getSkeletonConnections(character)
+    for i, conn in ipairs(connections) do
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Color = Color3.new(0, 1, 0)  -- Green lines
+        line.Thickness = 2
+        line.Transparency = 1
+        table.insert(skeletonESP[player], {PartA = conn[1], PartB = conn[2], Line = line})
+    end
+end
+
+-- Remove the ESP drawings for a player.
+local function removeSkeletonDrawing(player)
+    if skeletonESP[player] then
+        for _, conn in ipairs(skeletonESP[player]) do
+            if conn.Line then
+                conn.Line:Remove()
+            end
+        end
+        skeletonESP[player] = nil
+    end
+end
+
+-- Update all enemy ESP lines each frame.
+local function updateSkeletonESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            -- Create ESP if not already created.
+            if not skeletonESP[player] then
+                createSkeletonDrawing(player)
+            end
+            local character = player.Character
+            local connections = skeletonESP[player]
+            for _, data in ipairs(connections) do
+                local partA = character:FindFirstChild(data.PartA)
+                local partB = character:FindFirstChild(data.PartB)
+                if partA and partB then
+                    local posA, onScreenA = Camera:WorldToViewportPoint(partA.Position)
+                    local posB, onScreenB = Camera:WorldToViewportPoint(partB.Position)
+                    if onScreenA and onScreenB then
+                        data.Line.From = Vector2.new(posA.X, posA.Y)
+                        data.Line.To = Vector2.new(posB.X, posB.Y)
+                        data.Line.Visible = true
+                    else
+                        data.Line.Visible = false
+                    end
+                else
+                    data.Line.Visible = false
+                end
+            end
+        end
+    end
+end
+
+-- Enable the skeleton ESP
+local function enableSkeletonESP()
+    skeletonESPEnabled = true
+    espConnection = RunService.RenderStepped:Connect(updateSkeletonESP)
+end
+
+-- Disable the skeleton ESP and remove all drawings
+local function disableSkeletonESP()
+    skeletonESPEnabled = false
+    if espConnection then
+        espConnection:Disconnect()
+        espConnection = nil
+    end
+    for player, _ in pairs(skeletonESP) do
+        removeSkeletonDrawing(player)
+    end
+end
+
+-- Clean up when players leave
+Players.PlayerRemoving:Connect(function(player)
+    removeSkeletonDrawing(player)
+end)
+
+-- Also update ESP for character respawns.
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if skeletonESPEnabled then
+            createSkeletonDrawing(player)
+        end
+    end)
+end)
+
+-- UI Toggle Integration (Assuming MainSection is your UI container)
+MainSection:AddToggle({
+    Label = "Skeleton ESP",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    if state then
+        enableSkeletonESP()
+    else
+        disableSkeletonESP()
+    end
+end)
+
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local StarterGui = game:GetService("StarterGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Send a notification to confirm anti-AFK is enabled.
+StarterGui:SetCore("SendNotification", {
+    Title = "Anti-AFK",
+    Text = "anti-afk is implemented",
+    Duration = 5  -- Notification displays for 5 seconds.
+})
+
+-- Listen for idling and simulate activity.
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)

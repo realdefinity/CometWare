@@ -1,7 +1,6 @@
-loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/ui'))()
 
 local MovementTab = _G.baseWindow:AddTab("Movement")
-local MovementSection = exampleTab:AddSection("movement")
+local MovementSection = MovementTab:AddSection("movement")
 
 -- Variables
 local toggles = {

@@ -1,0 +1,205 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/comet/refs/heads/main/ui'))()
+
+local MovementTab = _G.baseWindow:AddTab("Movement")
+local MovementSection = exampleTab:AddSection("movement")
+
+-- Variables
+local toggles = {
+    customSpeedEnabled = false
+}
+local customSpeed = 16 -- Default speed
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+toggles = toggles or {}
+toggles.customSpeedEnabled = false
+customSpeed = 16
+local speedConnection
+
+local function applyCustomSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+    end
+    speedConnection = RunService.Stepped:Connect(function(_, deltaTime)
+        if toggles.customSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                local moveDirection = humanoid.MoveDirection * (customSpeed * deltaTime)
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(moveDirection.X, 0, moveDirection.Z)
+            end
+        end
+    end)
+end
+
+MovementSection:AddToggle({ 
+    Label = "Speed", 
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    toggles.customSpeedEnabled = state
+    if state then
+        applyCustomSpeed()
+    else
+        if speedConnection then
+            speedConnection:Disconnect()
+        end
+    end
+end)
+
+MovementSection:AddSlider({ 
+    Label = "Set Speed",
+    Min = 16,
+    Max = 50,
+    Default = 16,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(value)
+    customSpeed = value
+end)
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+toggles = toggles or {}
+toggles.customJumpEnabled = false
+jumpPower = 50
+
+local function applyCustomJump()
+    UserInputService.JumpRequest:Connect(function()
+        if toggles.customJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.FloorMaterial == Enum.Material.Air then return end
+            for i = 1, jumpPower, 5 do
+                task.wait(0.01)
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0.5, 0)
+            end
+            task.wait(0.1)
+            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, -0.5, 0)
+        end
+    end)
+end
+
+MovementSection:AddToggle({
+    Label = "Jump Power",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(Value)
+    toggles.customJumpEnabled = Value
+    if Value then
+        applyCustomJump()
+    end
+end)
+
+MovementSection:AddSlider({
+    Label = "Set Jump Power",
+    Range = {10, 100},
+    Increment = 5,
+    Default = 50,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(Value)
+    jumpPower = Value
+end)
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- State variables
+local flying = false
+local flySpeed = 5  -- Default fly speed
+local flyDirection = Vector3.new(0, 0, 0)
+local hrp = nil  -- HumanoidRootPart
+local flyConnection = nil
+
+-- Key states for smooth flight movement
+local keys = {
+    W = false,
+    S = false,
+    A = false,
+    D = false,
+    Space = false,
+    Shift = false
+}
+
+-- Start Fly function (with smooth, interpolated flight)
+local function startFly()
+    if flying or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    flying = true
+    hrp = LocalPlayer.Character.HumanoidRootPart
+    hrp.Anchored = true
+    flyConnection = RunService.RenderStepped:Connect(function(dt)
+        if flying and hrp then
+            flyDirection = Vector3.new(
+                ((keys.D and 1) or 0) + ((keys.A and -1) or 0),
+                ((keys.Space and 1) or 0) + ((keys.Shift and -1) or 0),
+                ((keys.S and 1) or 0) + ((keys.W and -1) or 0)
+            )
+            hrp.CFrame = hrp.CFrame * CFrame.new(flyDirection * flySpeed * 0.1)
+        end
+    end)
+end
+
+-- Stop Fly function
+local function stopFly()
+    flying = false
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+    if hrp then
+        hrp.Anchored = false
+    end
+end
+
+-- Update key states for flight
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then keys.W = true end
+    if input.KeyCode == Enum.KeyCode.S then keys.S = true end
+    if input.KeyCode == Enum.KeyCode.A then keys.A = true end
+    if input.KeyCode == Enum.KeyCode.D then keys.D = true end
+    if input.KeyCode == Enum.KeyCode.Space then keys.Space = true end
+    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = true end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then keys.W = false end
+    if input.KeyCode == Enum.KeyCode.S then keys.S = false end
+    if input.KeyCode == Enum.KeyCode.A then keys.A = false end
+    if input.KeyCode == Enum.KeyCode.D then keys.D = false end
+    if input.KeyCode == Enum.KeyCode.Space then keys.Space = false end
+    if input.KeyCode == Enum.KeyCode.LeftShift then keys.Shift = false end
+end)
+
+-- UI Integration using your custom UI functions.
+-- (Ensure MovementSection is a valid reference to your movement UI section.)
+MovementSection:AddToggle({
+    Label = "Enable Fly",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(Value)
+    if Value then
+        startFly()
+    else
+        stopFly()
+    end
+end)
+
+MovementSection:AddSlider({
+    Label = "Fly Speed",
+    Range = {1, 20},
+    Increment = 1,
+    Default = flySpeed,
+    Size = UDim2.new(0, 300, 0, 100)
+}, function(Value)
+    flySpeed = Value
+end)

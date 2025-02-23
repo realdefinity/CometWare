@@ -600,64 +600,75 @@ end
 --------------------------------------------------
 local TweenService = game:GetService("TweenService")
 
+local function tween(obj, props, dur, style, dir)
+	local info = TweenInfo.new(dur, style, dir)
+	local t = TweenService:Create(obj, info, props)
+	t:Play()
+	return t
+end
+
 local function createToggle(parent, opts, callback)
-    opts = opts or {}
-    local labelText = opts.Label or "Toggle"
-    local defaultState = opts.Default or false
+	opts = opts or {}
+	local labelText = opts.Label or "Toggle"
+	local defaultState = opts.Default or false
 
--- Outer Container: Advanced design for proper layout.
-local container = Instance.new("Frame")
-container.Name = "ToggleContainer"
-container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
-container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-container.BackgroundTransparency = 1  -- start transparent for fade-in
-container.ClipsDescendants = true
-container.Parent = parent
+	local container = Instance.new("Frame")
+	container.Name = "ToggleContainer"
+	container.Size = opts.Size or UDim2.new(1, 0, 0, 40)
+	container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	container.BackgroundTransparency = 1
+	container.ClipsDescendants = true
+	container.ZIndex = 1
+	container.Parent = parent
 
--- Add a subtle dynamic gradient for a richer background.
-local containerGradient = Instance.new("UIGradient", container)
-containerGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 25)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
-})
-containerGradient.Rotation = 90
+	local dropShadow = Instance.new("Frame")
+	dropShadow.Name = "ContainerDropShadow"
+	dropShadow.Size = container.Size
+	dropShadow.Position = UDim2.new(0, 4, 0, 4)
+	dropShadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	dropShadow.BackgroundTransparency = 0.6
+	dropShadow.BorderSizePixel = 0
+	dropShadow.ZIndex = container.ZIndex - 1
+	dropShadow.Parent = container
 
--- Smooth rounded corners.
-local containerCorner = Instance.new("UICorner", container)
-containerCorner.CornerRadius = UDim.new(0, 12)
+	local containerGradient = Instance.new("UIGradient", container)
+	containerGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+	})
+	containerGradient.Rotation = 90
 
--- Animated border (stroke) for a sleek outline.
-local containerStroke = Instance.new("UIStroke", container)
-containerStroke.Thickness = 2
-containerStroke.Color = Color3.fromRGB(100, 100, 100)
-containerStroke.Transparency = 0.3
+	local containerCorner = Instance.new("UICorner", container)
+	containerCorner.CornerRadius = UDim.new(0, 12)
 
--- Subtle drop shadow for depth.
-local dropShadow = Instance.new("Frame")
-dropShadow.Name = "ContainerDropShadow"
-dropShadow.Size = container.Size
-dropShadow.Position = UDim2.new(0, 4, 0, 4)
-dropShadow.BackgroundColor3 = Color3.new(0, 0, 0)
-dropShadow.BackgroundTransparency = 0.6
-dropShadow.BorderSizePixel = 0
-dropShadow.ZIndex = container.ZIndex - 1
-dropShadow.Parent = container
+	local containerStroke = Instance.new("UIStroke", container)
+	containerStroke.Thickness = 2
+	containerStroke.Color = Color3.fromRGB(120, 120, 120)
+	containerStroke.Transparency = 0.2
 
--- Animate the container's fade-in.
-tween(container, {BackgroundTransparency = 0}, 0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	tween(container, {BackgroundTransparency = 0}, 0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 
--- (Optional) Add a subtle scale pulse when the mouse hovers over the container.
-container.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        tween(container, {Size = (opts.Size or UDim2.new(1, 0, 0, 40)) * 1.02}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-    end
-end)
-container.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        tween(container, {Size = opts.Size or UDim2.new(1, 0, 0, 40)}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-    end
-end)
+	container.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			tween(container, {Size = (opts.Size or UDim2.new(1, 0, 0, 40)) * 1.03}, 0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			tween(dropShadow, {Size = (opts.Size or UDim2.new(1, 0, 0, 40)) * 1.03}, 0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		end
+	end)
+	container.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			tween(container, {Size = opts.Size or UDim2.new(1, 0, 0, 40)}, 0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			tween(dropShadow, {Size = opts.Size or UDim2.new(1, 0, 0, 40)}, 0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		end
+	end)
 
+	coroutine.wrap(function()
+		while true do
+			tween(containerStroke, {Transparency = 0.05}, 1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			wait(1)
+			tween(containerStroke, {Transparency = 0.2}, 1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			wait(1)
+		end
+	end)()
 
     -- Label: occupies most of the container on the left.
 -- Create the label.
@@ -675,96 +686,124 @@ label.TextStrokeColor3 = opts.TextStrokeColor or Color3.new(0, 0, 0)
 label.TextStrokeTransparency = opts.TextStrokeTransparency or 0.8
 label.Parent = container
 
--- Start with label text invisible, then fade it in slowly.
+local textGradient = Instance.new("UIGradient", label)
+textGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 200, 200)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 240, 240))
+})
+textGradient.Rotation = 0
+textGradient.Offset = Vector2.new(-0.5, 0)
+
 label.TextTransparency = 1
 tween(label, {TextTransparency = 0}, 1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+coroutine.wrap(function()
+	while true do
+		local t1 = tween(textGradient, {Offset = Vector2.new(0.5, 0)}, 3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		t1.Completed:Wait()
+		local t2 = tween(textGradient, {Offset = Vector2.new(-0.5, 0)}, 3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		t2.Completed:Wait()
+	end
+end)()
+
 
 -- Toggle track: fixed size on the right.
 local track = Instance.new("Frame")
 track.Name = "ToggleTrack"
 track.Size = UDim2.new(0, 60, 0, 30)
+track.Position = UDim2.new(1, -70, 0.5, -15)
 track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 track.BorderSizePixel = 0
 track.Parent = container
-track.Position = UDim2.new(1, -70, 0.5, -15)
 
--- Rounded corners on the track.
 local trackCorner = Instance.new("UICorner", track)
 trackCorner.CornerRadius = UDim.new(0, 15)
 
--- Subtle, looping gradient on the track.
 local trackGradient = Instance.new("UIGradient", track)
-trackGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-})
 trackGradient.Rotation = 90
+trackGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
+})
 
--- Continuously animate the gradient for a dynamic effect.
 spawn(function()
-    while true do
-        tween(trackGradient, {Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 35)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(65, 65, 65))
-        })}, 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        wait(2)
-        tween(trackGradient, {Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-        })}, 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        wait(2)
-    end
+	while true do
+		tween(trackGradient, {Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 35)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(65, 65, 65))
+		})}, 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		wait(2)
+		tween(trackGradient, {Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
+		})}, 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		wait(2)
+	end
 end)
 
--- Animated border (stroke) around the track.
 local borderStroke = Instance.new("UIStroke", track)
 borderStroke.Color = Color3.fromRGB(100, 100, 100)
 borderStroke.Thickness = 2
 borderStroke.Transparency = 0.5
 
--- UIScale for subtle hover effect on the track.
 local trackScale = Instance.new("UIScale", track)
 trackScale.Scale = 1
 
--- Continuous pulse effect on the track scale for extra visual flair.
 spawn(function()
-    while true do
-        tween(trackScale, {Scale = 1.05}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(trackScale, {Scale = 1}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        wait(1.5)
-    end
+	while true do
+		tween(trackScale, {Scale = 1.05}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		tween(trackScale, {Scale = 1}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		wait(1.5)
+	end
 end)
+
 
 
 -- Improved Glow & Handle Design
 
--- Create a container for the glow effect.
+local TweenService = game:GetService("TweenService")
+
 local glow = Instance.new("Frame")
 glow.Name = "ToggleGlow"
--- Make the glow container larger than the track for a more diffuse effect.
 glow.Size = UDim2.new(1, 20, 1, 20)
--- Center the glow around the track.
 glow.Position = UDim2.new(0, -10, 0, -10)
-glow.BackgroundTransparency = 1  -- No solid background.
+glow.BackgroundTransparency = 1
 glow.ZIndex = track.ZIndex - 1
 glow.Parent = track
 
--- Create an ImageLabel inside the glow for a radial blur effect.
 local glowImage = Instance.new("ImageLabel")
 glowImage.Name = "GlowImage"
 glowImage.Size = UDim2.new(1, 0, 1, 0)
 glowImage.Position = UDim2.new(0, 0, 0, 0)
 glowImage.BackgroundTransparency = 1
--- Use a radial glow asset (replace the asset ID with your own high-quality glow image).
-glowImage.Image = "rbxassetid://123456789"  
+glowImage.Image = "rbxassetid://123456789"
 glowImage.ImageColor3 = Color3.fromRGB(0, 180, 255)
 glowImage.ScaleType = Enum.ScaleType.Fit
 glowImage.ZIndex = glow.ZIndex
 glowImage.Parent = glow
 
--- Optionally add a UICorner to the glow image for softer rounded edges.
 local glowCorner = Instance.new("UICorner", glowImage)
 glowCorner.CornerRadius = UDim.new(0, 20)
+
+local glowScale = Instance.new("UIScale", glow)
+glowScale.Scale = 1
+
+spawn(function()
+	while true do
+		local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		local tweenTransparencyIn = TweenService:Create(glowImage, tweenInfo, {ImageTransparency = 0.2})
+		local tweenScaleUp = TweenService:Create(glowScale, tweenInfo, {Scale = 1.1})
+		tweenTransparencyIn:Play()
+		tweenScaleUp:Play()
+		tweenTransparencyIn.Completed:Wait()
+		local tweenTransparencyOut = TweenService:Create(glowImage, tweenInfo, {ImageTransparency = 0.6})
+		local tweenScaleDown = TweenService:Create(glowScale, tweenInfo, {Scale = 1})
+		tweenTransparencyOut:Play()
+		tweenScaleDown:Play()
+		tweenTransparencyOut.Completed:Wait()
+	end
+end)
+
 
 -- Toggle handle (the sliding indicator)
 local handle = Instance.new("Frame")
@@ -816,56 +855,47 @@ handleShadow.ZIndex = handle.ZIndex - 1
 local function updateToggle(newState)
     state = newState
     if state then
-        -- Use slower, smooth animations for the "on" state (0.7 sec).
         tween(handle, {Position = onPosition}, 0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        tween(track, {BackgroundColor3 = Color3.fromRGB(0, 200, 255)}, 0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(handle, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(glow, {BackgroundTransparency = 0.2}, 0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(borderStroke, {Color = Color3.fromRGB(0, 200, 255), Thickness = 4, Transparency = 0}, 0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        
-        -- OPTIONAL: If you have a separate "glowBlur" element for extra blur effect,
-        -- animate it to simulate an extra smooth, blurred transition.
+        tween(track, {BackgroundColor3 = Color3.fromRGB(0, 200, 255)}, 0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(handle, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(glow, {BackgroundTransparency = 0.2}, 0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(borderStroke, {Color = Color3.fromRGB(0, 200, 255), Thickness = 4, Transparency = 0}, 0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
         if glowBlur then
-            tween(glowBlur, {ImageTransparency = 0.2, Size = UDim2.new(1, 10, 1, 10)}, 0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+            tween(glowBlur, {ImageTransparency = 0.2, Size = UDim2.new(1, 10, 1, 10)}, 0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
         end
     else
         tween(handle, {Position = offPosition}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        tween(track, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(handle, {BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(glow, {BackgroundTransparency = 1}, 0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        tween(borderStroke, {Color = Color3.fromRGB(100, 100, 100), Thickness = 2, Transparency = 0.5}, 0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        tween(track, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(handle, {BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(glow, {BackgroundTransparency = 1}, 0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+        tween(borderStroke, {Color = Color3.fromRGB(100, 100, 100), Thickness = 2, Transparency = 0.5}, 0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     end
     if callback then
         callback(state)
     end
 end
 
---------------------------------------------------
--- Connect mouse input: Toggle when track is clicked.
---------------------------------------------------
 track.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         updateToggle(not state)
     end
 end)
 
---------------------------------------------------
--- Hover animations for a polished look.
---------------------------------------------------
 track.MouseEnter:Connect(function()
-    tween(trackScale, {Scale = 1.05}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+    tween(trackScale, {Scale = 1.05}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     if state then
-        tween(borderStroke, {Thickness = 4.75, Transparency = 0}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        tween(borderStroke, {Thickness = 4.75, Transparency = 0}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     else
-        tween(borderStroke, {Thickness = 2.75, Transparency = 0.4}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        tween(borderStroke, {Thickness = 2.75, Transparency = 0.4}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     end
 end)
+
 track.MouseLeave:Connect(function()
-    tween(trackScale, {Scale = 1}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+    tween(trackScale, {Scale = 1}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     if state then
-        tween(borderStroke, {Thickness = 4, Transparency = 0}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        tween(borderStroke, {Thickness = 4, Transparency = 0}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     else
-        tween(borderStroke, {Thickness = 2, Transparency = 0.5}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        tween(borderStroke, {Thickness = 2, Transparency = 0.5}, 0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
     end
 end)
 
@@ -2859,24 +2889,41 @@ for themeName, themeData in pairs(themes) do
 end
 
 
+-- Constants for layout spacing
+local TAB_BUTTONS_HEIGHT = 40
+local TAB_BUTTONS_Y = 60
+local TAB_CONTENT_Y = TAB_BUTTONS_Y + TAB_BUTTONS_HEIGHT + 10  -- Add extra spacing below tab buttons
+local BOTTOM_OFFSET = 50
+
+-- Create and configure the Tab Buttons Frame
 local tabButtonsFrame = Instance.new("Frame")
 tabButtonsFrame.Name = "TabButtonsFrame"
 tabButtonsFrame.Parent = mainFrame
-tabButtonsFrame.Size = UDim2.new(1, 0, 0, 40)
-tabButtonsFrame.Position = UDim2.new(0, 0, 0, 60)
+tabButtonsFrame.Size = UDim2.new(1, 0, 0, TAB_BUTTONS_HEIGHT)
+tabButtonsFrame.Position = UDim2.new(0, 0, 0, TAB_BUTTONS_Y)
 tabButtonsFrame.BackgroundTransparency = 1
+tabButtonsFrame.ZIndex = 2  -- Ensure it is on top of tab content
 
+-- Create and configure the Tab Content Frame
 local tabContentFrame = Instance.new("Frame")
 tabContentFrame.Name = "TabContentFrame"
 tabContentFrame.Parent = mainFrame
-tabContentFrame.Size = UDim2.new(1, 0, 1, -50)
-tabContentFrame.Position = UDim2.new(0, 0, 0, 120)
+tabContentFrame.Size = UDim2.new(1, 0, 1, -BOTTOM_OFFSET)
+tabContentFrame.Position = UDim2.new(0, 0, 0, TAB_CONTENT_Y)  -- Move it further down
 tabContentFrame.BackgroundTransparency = 1
-tabContentFrame.ClipsDescendants = true
+tabContentFrame.ClipsDescendants = false  -- Allow content to be visible
+tabContentFrame.ZIndex = 1  -- Ensure it stays behind elements
 
-local contentLayout = Instance.new("UIListLayout", tabContentFrame)
+-- Add UIPadding to push the tab content down
+local uiPadding = Instance.new("UIPadding")
+uiPadding.Parent = tabContentFrame
+uiPadding.PaddingTop = UDim.new(0, 0)  -- Move content down slightly
+
+-- Add a UIListLayout to manage the layout of the tab content
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Parent = tabContentFrame
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-contentLayout.Padding = UDim.new(0, 0)
+contentLayout.Padding = UDim.new(0, 5)  -- Add small spacing between elements
 
 -- SERVICES
 local TweenService = game:GetService("TweenService")
@@ -3054,7 +3101,7 @@ function tab:AddSection(sectionName)
 	local sectionFrame = Instance.new("Frame")
 	sectionFrame.Name = "Section_" .. sectionName
 	sectionFrame.Size = UDim2.new(0.1, 0, 0, 0)
-	sectionFrame.BackgroundTransparency = 0
+	sectionFrame.BackgroundTransparency = 1
 	sectionFrame.Parent = tabContent
 
 	local sectionLayout = Instance.new("UIListLayout", sectionFrame)
@@ -3071,10 +3118,6 @@ function tab:AddSection(sectionName)
 	end
 	function section:AddButton(opts, callback)
 		createButton(sectionFrame, opts, callback)
-	end
-	function section:AddColorPicker(opts, callback)
-		-- Create the Color Picker UI element and parent it to the sectionFrame.
-		createColorPicker(opts, callback).Parent = sectionFrame
 	end
 
 	table.insert(tab.Sections, section)
@@ -3110,3 +3153,154 @@ end
 
 _G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,500,0,400) })
 print("Base UI created. Use _G.baseWindow:AddTab('Tab Name') to add a new tab.")
+
+local MainTab = _G.baseWindow:AddTab("Main")
+local MainSection = MainTab:AddSection("main")
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Toggle for Skeleton ESP
+local skeletonESPEnabled = false
+local espConnection
+
+-- Table to hold each enemy’s ESP lines
+local skeletonESP = {}
+
+-- Get the connections (joints) for the character.
+-- For R6, we assume parts: "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
+-- For R15, we use a more detailed set.
+local function getSkeletonConnections(character)
+    local connections = {}
+    if character:FindFirstChild("UpperTorso") then
+        -- R15 rig connections
+        table.insert(connections, {"Head", "UpperTorso"})
+        table.insert(connections, {"UpperTorso", "LeftUpperArm"})
+        table.insert(connections, {"LeftUpperArm", "LeftLowerArm"})
+        table.insert(connections, {"LeftLowerArm", "LeftHand"})
+        table.insert(connections, {"UpperTorso", "RightUpperArm"})
+        table.insert(connections, {"RightUpperArm", "RightLowerArm"})
+        table.insert(connections, {"RightLowerArm", "RightHand"})
+        table.insert(connections, {"UpperTorso", "LowerTorso"})
+        table.insert(connections, {"LowerTorso", "LeftUpperLeg"})
+        table.insert(connections, {"LeftUpperLeg", "LeftLowerLeg"})
+        table.insert(connections, {"LeftLowerLeg", "LeftFoot"})
+        table.insert(connections, {"LowerTorso", "RightUpperLeg"})
+        table.insert(connections, {"RightUpperLeg", "RightLowerLeg"})
+        table.insert(connections, {"RightLowerLeg", "RightFoot"})
+    else
+        -- Assume R6 rig
+        table.insert(connections, {"Head", "Torso"})
+        table.insert(connections, {"Torso", "Left Arm"})
+        table.insert(connections, {"Torso", "Right Arm"})
+        table.insert(connections, {"Torso", "Left Leg"})
+        table.insert(connections, {"Torso", "Right Leg"})
+    end
+    return connections
+end
+
+-- Create drawing objects for a given enemy player.
+local function createSkeletonDrawing(player)
+    if skeletonESP[player] then return end
+    skeletonESP[player] = {}  -- Table of connection data for this player
+    local character = player.Character
+    if not character then return end
+    local connections = getSkeletonConnections(character)
+    for i, conn in ipairs(connections) do
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Color = Color3.new(0, 1, 0)  -- Green lines
+        line.Thickness = 2
+        line.Transparency = 1
+        table.insert(skeletonESP[player], {PartA = conn[1], PartB = conn[2], Line = line})
+    end
+end
+
+-- Remove the ESP drawings for a player.
+local function removeSkeletonDrawing(player)
+    if skeletonESP[player] then
+        for _, conn in ipairs(skeletonESP[player]) do
+            if conn.Line then
+                conn.Line:Remove()
+            end
+        end
+        skeletonESP[player] = nil
+    end
+end
+
+-- Update all enemy ESP lines each frame.
+local function updateSkeletonESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            -- Create ESP if not already created.
+            if not skeletonESP[player] then
+                createSkeletonDrawing(player)
+            end
+            local character = player.Character
+            local connections = skeletonESP[player]
+            for _, data in ipairs(connections) do
+                local partA = character:FindFirstChild(data.PartA)
+                local partB = character:FindFirstChild(data.PartB)
+                if partA and partB then
+                    local posA, onScreenA = Camera:WorldToViewportPoint(partA.Position)
+                    local posB, onScreenB = Camera:WorldToViewportPoint(partB.Position)
+                    if onScreenA and onScreenB then
+                        data.Line.From = Vector2.new(posA.X, posA.Y)
+                        data.Line.To = Vector2.new(posB.X, posB.Y)
+                        data.Line.Visible = true
+                    else
+                        data.Line.Visible = false
+                    end
+                else
+                    data.Line.Visible = false
+                end
+            end
+        end
+    end
+end
+local function enableSkeletonESP()
+    skeletonESPEnabled = true
+    espConnection = RunService.RenderStepped:Connect(updateSkeletonESP)
+end
+
+-- Disable the skeleton ESP and remove all drawings
+local function disableSkeletonESP()
+    skeletonESPEnabled = false
+    if espConnection then
+        espConnection:Disconnect()
+        espConnection = nil
+    end
+    for player, _ in pairs(skeletonESP) do
+        removeSkeletonDrawing(player)
+    end
+end
+
+-- Clean up when players leave
+Players.PlayerRemoving:Connect(function(player)
+    removeSkeletonDrawing(player)
+end)
+
+-- Also update ESP for character respawns.
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if skeletonESPEnabled then
+            createSkeletonDrawing(player)
+        end
+    end)
+end)
+
+-- UI Toggle Integration (Assuming MainSection is your UI container)
+MainSection:AddToggle({
+    Label = "Skeleton ESP",
+    Default = false,
+    Size = UDim2.new(0, 300, 0, 40)
+}, function(state)
+    if state then
+        enableSkeletonESP()
+    else
+        disableSkeletonESP()
+    end
+end)
+

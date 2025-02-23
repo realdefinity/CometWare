@@ -1,8 +1,8 @@
 loadstring(game:HttpGet('https://raw.githubusercontent.com/realdefinity/CometWare/refs/heads/main/cometui'))()
 
-local MainTab = _G.BaseWindow:AddTab("Main")
+local MainTab = _G.baseWindow:AddTab("Main")
 local MainSection = MainTab:AddSection("main")
-local MovementTab = _G.BaseWindow:AddTab("Movement")
+local MovementTab = _G.baseWindow:AddTab("Movement")
 local MovementSection = MovementTab:AddSection("movement")
 
 -- Variables

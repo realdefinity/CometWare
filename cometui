@@ -3150,3 +3150,6 @@ function CometUI:CreateWindow(config)
     end
     return windowAPI
 end
+
+_G.baseWindow = CometUI:CreateWindow({ Title = "CometWare", Size = UDim2.new(0,500,0,400) })
+print("CometWare window created. DO NOT ADD A WINDOW!")
